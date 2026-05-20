@@ -1,7 +1,6 @@
-
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { DashboardHeader } from "@/components/dashboard-header";
 import {
   Card,
@@ -13,11 +12,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { PlusCircle, ArrowRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { quotes as initialQuotes, clients, vehicles } from "@/lib/data";
 import Link from "next/link";
 import { getStatusVariant } from "@/lib/utils";
 import { QuoteFormDialog } from "@/components/quote-form-dialog";
-import type { Quote } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 import {
   Table,
@@ -27,28 +24,78 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Skeleton } from "@/components/ui/skeleton";
+import { supabase } from "@/lib/supabase";
 
 export default function QuotesPage() {
-  const [quotes, setQuotes] = useState<Quote[]>(initialQuotes);
+  const [quotes, setQuotes] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const { toast } = useToast();
 
-  const handleFormSubmit = (data: Omit<Quote, 'id' | 'status' | 'date'>) => {
-    const newQuote: Quote = {
-      id: `COT-2024-${(quotes.length + 1).toString().padStart(3, '0')}`,
-      date: new Date().toISOString(),
-      status: 'Enviada',
-      ...data,
-    };
-    setQuotes([newQuote, ...quotes]);
-    toast({
-      title: "Cotización Creada",
-      description: `Se ha creado la cotización ${newQuote.id}.`,
-    });
+  useEffect(() => {
+    fetchQuotes();
+  }, []);
+
+  async function fetchQuotes() {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from("quotes")
+      .select(`
+        *,
+        clients(name),
+        vehicles(make, model, license_plate)
+      `)
+      .order("created_at", { ascending: false });
+
+    if (!error && data) {
+      setQuotes(data);
+    } else {
+      console.error("Error fetching quotes:", error);
+    }
+    setLoading(false);
+  }
+
+  const handleFormSubmit = async (data: any) => {
+    const { data: newQuote, error } = await supabase
+      .from("quotes")
+      .insert({
+        client_id: data.clientId,
+        vehicle_id: data.vehicleId,
+        status: "Enviada",
+        total: data.total,
+        items: data.items,
+        notes: data.notes,
+      })
+      .select(`*, clients(name), vehicles(make, model, license_plate)`)
+      .single();
+
+    if (!error && newQuote) {
+      setQuotes([newQuote, ...quotes]);
+      toast({
+        title: "Cotización Creada",
+        description: `Se ha creado la cotización exitosamente.`,
+      });
+    } else {
+      toast({
+        variant: "destructive",
+        title: "Error al crear",
+        description: "No se pudo guardar la cotización.",
+      });
+    }
     setIsFormOpen(false);
   };
-  
-  const sortedQuotes = quotes.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+  if (loading) {
+    return (
+      <div className="flex flex-col h-[calc(100vh-57px)]">
+        <DashboardHeader title="Gestión de Cotizaciones" />
+        <main className="flex-1 p-6">
+          <Skeleton className="h-64 w-full" />
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-[calc(100vh-57px)]">
@@ -60,7 +107,7 @@ export default function QuotesPage() {
       </DashboardHeader>
       <main className="flex-1 p-6 overflow-y-auto">
         <Card>
-           <CardHeader>
+          <CardHeader>
             <CardTitle>Listado de Cotizaciones</CardTitle>
             <CardDescription>
               Visualice y gestione todos los presupuestos emitidos.
@@ -80,37 +127,51 @@ export default function QuotesPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {sortedQuotes.map((quote) => {
-                  const client = clients.find((c) => c.id === quote.clientId);
-                  const vehicle = vehicles.find((v) => v.id === quote.vehicleId);
-                  return (
+                {quotes.length > 0 ? (
+                  quotes.map((quote) => (
                     <TableRow key={quote.id}>
-                      <TableCell className="font-medium">{quote.id}</TableCell>
-                      <TableCell>{client?.name}</TableCell>
-                      <TableCell>{vehicle ? `${vehicle.make} ${vehicle.model}` : 'N/A'}</TableCell>
-                      <TableCell>{new Date(quote.date).toLocaleDateString('es-CL')}</TableCell>
-                      <TableCell className="font-semibold">${quote.total.toLocaleString('es-CL')}</TableCell>
+                      <TableCell className="font-medium font-mono">
+                        {quote.quote_number || quote.id.slice(0, 8).toUpperCase()}
+                      </TableCell>
+                      <TableCell>{quote.clients?.name || "—"}</TableCell>
+                      <TableCell>
+                        {quote.vehicles
+                          ? `${quote.vehicles.make} ${quote.vehicles.model}`
+                          : "N/A"}
+                      </TableCell>
+                      <TableCell>
+                        {new Date(quote.created_at).toLocaleDateString("es-CL")}
+                      </TableCell>
+                      <TableCell className="font-semibold">
+                        ${(quote.total || 0).toLocaleString("es-CL")}
+                      </TableCell>
                       <TableCell>
                         <Badge variant={getStatusVariant(quote.status)}>
                           {quote.status}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
-                         <Button asChild variant="outline" size="sm">
-                            <Link href={`/dashboard/finance/quotes/${quote.id}`}>
-                                Ver Detalle <ArrowRight className="ml-2 h-4 w-4" />
-                            </Link>
-                         </Button>
+                        <Button asChild variant="outline" size="sm">
+                          <Link href={`/dashboard/finance/quotes/${quote.id}`}>
+                            Ver Detalle <ArrowRight className="ml-2 h-4 w-4" />
+                          </Link>
+                        </Button>
                       </TableCell>
                     </TableRow>
-                  )
-                })}
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
+                      No hay cotizaciones registradas aún.
+                    </TableCell>
+                  </TableRow>
+                )}
               </TableBody>
             </Table>
           </CardContent>
         </Card>
       </main>
-      <QuoteFormDialog 
+      <QuoteFormDialog
         isOpen={isFormOpen}
         onOpenChange={setIsFormOpen}
         onSubmit={handleFormSubmit}

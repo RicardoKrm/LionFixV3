@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Form,
   FormControl,
@@ -31,7 +31,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "./ui/select";
-import { clients, vehicles } from "@/lib/data";
+import { supabase } from "@/lib/supabase";
 
 const notificationSchema = z.object({
   clientId: z.string().min(1, "Debe seleccionar un cliente."),
@@ -56,6 +56,18 @@ export function NotificationFormDialog({
   onSubmit,
   notification,
 }: NotificationFormDialogProps) {
+  const [clients, setClients] = useState<any[]>([]);
+  const [allVehicles, setAllVehicles] = useState<any[]>([]);
+
+  useEffect(() => {
+    supabase.from("clients").select("id, name").order("name").then(({ data }) => {
+      if (data) setClients(data);
+    });
+    supabase.from("vehicles").select("id, make, model, license_plate, client_id").then(({ data }) => {
+      if (data) setAllVehicles(data);
+    });
+  }, []);
+
   const form = useForm<NotificationFormData>({
     resolver: zodResolver(notificationSchema),
     defaultValues: {
@@ -70,10 +82,8 @@ export function NotificationFormDialog({
   const selectedClientId = form.watch("clientId");
 
   const clientVehicles = useMemo(() => {
-    const client = clients.find(c => c.id === selectedClientId);
-    if (!client) return [];
-    return vehicles.filter(v => client.vehicleIds.includes(v.id));
-  }, [selectedClientId]);
+    return allVehicles.filter(v => v.client_id === selectedClientId);
+  }, [selectedClientId, allVehicles]);
 
   useEffect(() => {
     if (isOpen) {
@@ -152,9 +162,9 @@ export function NotificationFormDialog({
                         </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                            {clientVehicles.map((vehicle: Vehicle) => (
+                            {clientVehicles.map((vehicle: any) => (
                                 <SelectItem key={vehicle.id} value={vehicle.id}>
-                                    {vehicle.make} {vehicle.model} ({vehicle.licensePlate})
+                                    {vehicle.make} {vehicle.model} ({vehicle.license_plate})
                                 </SelectItem>
                             ))}
                         </SelectContent>

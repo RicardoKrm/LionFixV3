@@ -1,8 +1,8 @@
 
 "use client";
 
-import { notFound, useRouter } from "next/navigation";
-import { workOrders as initialWorkOrders, clients, vehicles, parts as inventory, technicians } from "@/lib/data";
+import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabase";
 import { DashboardHeader } from "@/components/dashboard-header";
 import {
   Card,
@@ -25,10 +25,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { WorkOrderFormDialog } from "@/components/work-order-form-dialog";
 import { useToast } from "@/hooks/use-toast";
-import type { WorkOrder, WorkOrderStatus, ServiceLogEntry } from "@/types";
+import type { WorkOrderStatus, ServiceLogEntry } from "@/types";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -39,82 +39,156 @@ import { Textarea } from "@/components/ui/textarea";
 import { ObdScannerTool } from "@/components/obd-scanner-tool";
 import { SatisfactionSurveyTool } from "@/components/satisfaction-survey-tool";
 import { WorkOrderStatusTracker } from "@/components/work-order-status-tracker";
+import { Skeleton } from "@/components/ui/skeleton";
 
+const LABOR_RATE_PER_HOUR = 25000; // Flat labor cost rate per hour (CLP)
+const LABOR_REVENUE_MULTIPLIER = 2.5; // Revenue markup on labor cost
 
 export default function WorkOrderDetailPage({
   params,
 }: {
   params: { id: string };
 }) {
-  const [workOrders, setWorkOrders] = useState(initialWorkOrders);
+  const [workOrder, setWorkOrder] = useState<any | null>(null);
+  const [loading, setLoading] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [newLogEntry, setNewLogEntry] = useState("");
   const [attachedFiles, setAttachedFiles] = useState(["Diagnostico_Inicial.pdf"]);
 
-
   const { toast } = useToast();
   const router = useRouter();
 
-  const workOrder = workOrders.find((wo) => wo.id === params.id);
+  useEffect(() => {
+    async function fetchWorkOrder() {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('work_orders')
+        .select('*, clients(*), vehicles(*), profiles!work_orders_technician_id_fkey(*)')
+        .eq('id', params.id)
+        .single();
 
-  if (!workOrder) {
-    notFound();
-  }
-  
-  const handleUpdateStatus = (newStatus: WorkOrderStatus) => {
-    const updatedWorkOrders = workOrders.map(wo => 
-      wo.id === workOrder.id ? { ...wo, status: newStatus } : wo
-    );
-    setWorkOrders(updatedWorkOrders);
+      if (error || !data) {
+        console.error("Error fetching work order:", error);
+        setWorkOrder(null);
+      } else {
+        setWorkOrder(data);
+      }
+      setLoading(false);
+    }
+    fetchWorkOrder();
+  }, [params.id]);
+
+  const handleUpdateStatus = async (newStatus: WorkOrderStatus) => {
+    if (!workOrder) return;
+    const { error } = await supabase
+      .from('work_orders')
+      .update({ status: newStatus })
+      .eq('id', workOrder.id);
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar el estado de la orden.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setWorkOrder({ ...workOrder, status: newStatus });
     toast({
       title: "Estado Actualizado",
-      description: `La orden de trabajo ahora está en estado: ${newStatus}.`
-    })
-  }
+      description: `La orden de trabajo ahora está en estado: ${newStatus}.`,
+    });
+  };
 
-  const handleFormSubmit = (data: Omit<WorkOrder, 'id' | 'entryDate' | 'status' | 'serviceLog'>) => {
-    const updatedWorkOrder = {
-        ...workOrder,
-        ...data,
-        completionDate: data.status === 'Completado' || data.status === 'Entregado' ? new Date().toISOString() : workOrder.completionDate,
+  const handleFormSubmit = async (data: any) => {
+    if (!workOrder) return;
+
+    const updatePayload: any = {
+      service_description: data.service || data.service_description,
+      type: data.type,
+      technician_id: data.technician_id || data.technician,
+      labor_hours: data.laborHours ?? data.labor_hours,
+      parts_used: data.parts ?? data.parts_used,
     };
-    
-    setWorkOrders(workOrders.map(wo => wo.id === workOrder.id ? updatedWorkOrder : wo));
+
+    if (data.status === 'Completado' || data.status === 'Entregado') {
+      updatePayload.completion_date = workOrder.completion_date || new Date().toISOString();
+    }
+
+    const { error } = await supabase
+      .from('work_orders')
+      .update(updatePayload)
+      .eq('id', workOrder.id);
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar la orden de trabajo.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setWorkOrder({
+      ...workOrder,
+      ...updatePayload,
+    });
     toast({
       title: "Orden de Trabajo Actualizada",
       description: `Se ha actualizado la orden ${workOrder.id}.`,
     });
     setIsFormOpen(false);
   };
-  
-  const handleAddLogEntry = () => {
-    if (!newLogEntry.trim()) return;
+
+  const handleAddLogEntry = async () => {
+    if (!newLogEntry.trim() || !workOrder) return;
 
     const entry: ServiceLogEntry = {
-        timestamp: new Date().toISOString(),
-        technician: "Ricardo Milos", // In a real app, this would come from the logged-in user
-        entry: newLogEntry.trim(),
+      timestamp: new Date().toISOString(),
+      technician: "Ricardo Milos", // In a real app, this would come from the logged-in user
+      entry: newLogEntry.trim(),
     };
 
-    const updatedWorkOrders = workOrders.map(wo => 
-      wo.id === workOrder.id ? { ...wo, serviceLog: [...wo.serviceLog, entry] } : wo
-    );
-    setWorkOrders(updatedWorkOrders);
-    setNewLogEntry(""); // Clear the textarea
+    const currentLog = Array.isArray(workOrder.service_log) ? workOrder.service_log : [];
+    const updatedLog = [...currentLog, entry];
+
+    const { error } = await supabase
+      .from('work_orders')
+      .update({ service_log: updatedLog })
+      .eq('id', workOrder.id);
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: "No se pudo agregar la entrada a la bitácora.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setWorkOrder({ ...workOrder, service_log: updatedLog });
+    setNewLogEntry("");
     toast({
       title: "Entrada Agregada",
       description: "Se ha añadido una nueva entrada a la bitácora de servicio.",
     });
   };
-  
-  const handleSurveySubmit = (rating: number, comment: string) => {
-    const updatedWorkOrders = workOrders.map(wo => 
-      wo.id === workOrder.id ? { ...wo, satisfactionRating: rating, satisfactionComment: comment } : wo
-    );
-    setWorkOrders(updatedWorkOrders);
+
+  const handleSurveySubmit = async (rating: number, comment: string) => {
+    if (!workOrder) return;
+
+    const { error } = await supabase
+      .from('work_orders')
+      .update({ satisfaction_rating: rating, satisfaction_comment: comment })
+      .eq('id', workOrder.id);
+
+    if (!error) {
+      setWorkOrder({ ...workOrder, satisfaction_rating: rating, satisfaction_comment: comment });
+    }
   };
-  
-   const handleUploadFile = () => {
+
+  const handleUploadFile = () => {
     toast({
       title: "Adjuntar Archivo (Simulación)",
       description: "En una aplicación real, aquí se abriría un diálogo para subir un archivo.",
@@ -130,34 +204,88 @@ export default function WorkOrderDetailPage({
     });
   };
 
-
-  const client = clients.find((c) => c.id === workOrder.clientId);
-  const vehicle = vehicles.find((v) => v.id === workOrder.vehicleId);
-  const technician = technicians.find((t) => t.name === workOrder.technician);
-
+  const client = workOrder?.clients;
+  const vehicle = workOrder?.vehicles;
+  const parts: any[] = Array.isArray(workOrder?.parts_used) ? workOrder.parts_used : [];
+  const serviceLog: any[] = Array.isArray(workOrder?.service_log) ? workOrder.service_log : [];
 
   const financialSummary = useMemo(() => {
-    const partsCost = workOrder.parts.reduce((acc, part) => acc + (part.cost * part.quantity), 0);
-    const laborCost = (technician?.baseSalary || 0) / 160 * workOrder.laborHours; // Simplified monthly salary to hourly rate
-    
+    if (!workOrder) return { partsCost: 0, laborCost: 0, totalCost: 0, partsRevenue: 0, laborRevenue: 0, totalRevenue: 0, profit: 0, margin: 0 };
+
+    const partsCost = parts.reduce((acc: number, part: any) => acc + ((part.cost || 0) * (part.quantity || 0)), 0);
+    const laborCost = LABOR_RATE_PER_HOUR * (workOrder.labor_hours || 0);
+
     const totalCost = partsCost + laborCost;
 
-    const partsRevenue = workOrder.parts.reduce((acc, part) => acc + (part.price * part.quantity), 0);
-    // Simplified labor revenue: assume 2.5x markup on cost
-    const laborRevenue = laborCost * 2.5; 
-    
+    const partsRevenue = parts.reduce((acc: number, part: any) => acc + ((part.price || 0) * (part.quantity || 0)), 0);
+    const laborRevenue = laborCost * LABOR_REVENUE_MULTIPLIER;
+
     const totalRevenue = partsRevenue + laborRevenue;
 
     const profit = totalRevenue - totalCost;
     const margin = totalRevenue > 0 ? (profit / totalRevenue) * 100 : 0;
 
     return { partsCost, laborCost, totalCost, partsRevenue, laborRevenue, totalRevenue, profit, margin };
+  }, [workOrder, parts]);
 
-  }, [workOrder, technician]);
+  if (loading) {
+    return (
+      <div className="flex flex-col h-[calc(100vh-57px)]">
+        <DashboardHeader title="Cargando Orden de Trabajo...">
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-10 w-[150px]" />
+            <Skeleton className="h-10 w-[130px]" />
+          </div>
+        </DashboardHeader>
+        <main className="flex-1 p-6 space-y-6 overflow-y-auto">
+          <Card className="overflow-hidden">
+            <CardHeader className="bg-muted/50">
+              <Skeleton className="h-8 w-[300px]" />
+              <Skeleton className="h-4 w-[200px] mt-2" />
+            </CardHeader>
+            <CardContent className="p-6">
+              <Skeleton className="h-16 w-full" />
+            </CardContent>
+          </Card>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-1 space-y-6">
+              <Card>
+                <CardHeader><Skeleton className="h-6 w-[100px]" /></CardHeader>
+                <CardContent className="space-y-2">
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-3/4" />
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader><Skeleton className="h-6 w-[100px]" /></CardHeader>
+                <CardContent className="space-y-2">
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-3/4" />
+                  <Skeleton className="h-4 w-full" />
+                </CardContent>
+              </Card>
+            </div>
+            <div className="lg:col-span-2 space-y-6">
+              <Card>
+                <CardHeader><Skeleton className="h-6 w-[250px]" /></CardHeader>
+                <CardContent>
+                  <Skeleton className="h-[200px] w-full" />
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
+  if (!workOrder) {
+    return <div className="p-6 text-center text-muted-foreground">Orden de trabajo no encontrada.</div>;
+  }
 
   if (!client || !vehicle) {
-    // Handle cases where related data might be missing
     return <div>Error: Datos de Cliente o Vehículo no encontrados.</div>;
   }
 
@@ -195,18 +323,18 @@ export default function WorkOrderDetailPage({
             <CardHeader className="bg-muted/50">
                 <div className="flex flex-wrap items-center justify-between gap-4">
                     <div>
-                        <CardTitle className="text-2xl">{workOrder.service}</CardTitle>
-                        <CardDescription>Técnico Asignado: {workOrder.technician}</CardDescription>
+                        <CardTitle className="text-2xl">{workOrder.service_description}</CardTitle>
+                        <CardDescription>Técnico Asignado: {workOrder.profiles?.name || 'Sin asignar'}</CardDescription>
                     </div>
                      <div className="flex items-center gap-4 text-sm">
                         <div>
                             <p className="font-semibold">Ingreso:</p>
-                            <p className="text-muted-foreground">{new Date(workOrder.entryDate).toLocaleString()}</p>
+                            <p className="text-muted-foreground">{new Date(workOrder.entry_date).toLocaleString()}</p>
                         </div>
-                        {workOrder.completionDate && (
+                        {workOrder.completion_date && (
                             <div>
                                 <p className="font-semibold">Finalización:</p>
-                                <p className="text-muted-foreground">{new Date(workOrder.completionDate).toLocaleString()}</p>
+                                <p className="text-muted-foreground">{new Date(workOrder.completion_date).toLocaleString()}</p>
                             </div>
                         )}
                     </div>
@@ -236,11 +364,13 @@ export default function WorkOrderDetailPage({
                     <CardTitle className="flex items-center"><Car className="mr-2"/> Vehículo</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-2 text-sm">
-                        <p><strong>Patente:</strong> <span className="font-mono uppercase">{vehicle.licensePlate}</span></p>
+                        <p><strong>Patente:</strong> <span className="font-mono uppercase">{vehicle.license_plate}</span></p>
                         <p><strong>Marca / Modelo:</strong> {vehicle.make} {vehicle.model}</p>
                         <p><strong>Año:</strong> {vehicle.year}</p>
                         <p><strong>VIN:</strong> <span className="font-mono">{vehicle.vin}</span></p>
-                        <p><strong>N° Motor:</strong> <span className="font-mono">{vehicle.motorNumber}</span></p>
+                        {vehicle.motor_number && (
+                          <p><strong>N° Motor:</strong> <span className="font-mono">{vehicle.motor_number}</span></p>
+                        )}
                     </CardContent>
                 </Card>
                  <Card>
@@ -253,7 +383,7 @@ export default function WorkOrderDetailPage({
                             <span className="font-medium">${financialSummary.partsCost.toLocaleString('es-CL')}</span>
                        </div>
                        <div className="flex justify-between items-center">
-                            <span className="text-muted-foreground">Costo Mano Obra ({workOrder.laborHours}h)</span>
+                            <span className="text-muted-foreground">Costo Mano Obra ({workOrder.labor_hours || 0}h)</span>
                             <span className="font-medium">${Math.round(financialSummary.laborCost).toLocaleString('es-CL')}</span>
                        </div>
                         <Separator/>
@@ -301,7 +431,7 @@ export default function WorkOrderDetailPage({
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-4 max-h-[400px] overflow-y-auto pr-4 -mr-4">
-                            {workOrder.serviceLog.map((log, index) => (
+                            {serviceLog.map((log: any, index: number) => (
                                 <div key={index} className="flex gap-3">
                                     <div className="flex flex-col items-center">
                                         <div className="bg-accent rounded-full p-1.5 text-accent-foreground">
@@ -334,14 +464,14 @@ export default function WorkOrderDetailPage({
                     </CardContent>
                 </Card>
 
-                 {workOrder.finalReport && (
+                 {workOrder.final_report && (
                      <Card>
                         <CardHeader>
                             <CardTitle className="flex items-center"><FileSignature className="mr-2"/> Informe Final para Cliente</CardTitle>
                         </CardHeader>
                         <CardContent>
                             <div className="prose prose-sm text-muted-foreground whitespace-pre-wrap">
-                               {workOrder.finalReport}
+                               {workOrder.final_report}
                             </div>
                         </CardContent>
                     </Card>
@@ -364,13 +494,13 @@ export default function WorkOrderDetailPage({
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {workOrder.parts.length > 0 ? workOrder.parts.map(part => (
+                                {parts.length > 0 ? parts.map((part: any) => (
                                     <TableRow key={part.sku}>
                                         <TableCell className="font-medium">{part.name}</TableCell>
                                         <TableCell className="font-mono">{part.sku}</TableCell>
                                         <TableCell className="text-right">{part.quantity}</TableCell>
-                                        <TableCell className="text-right">${part.price.toLocaleString('es-CL')}</TableCell>
-                                        <TableCell className="text-right font-semibold">${(part.price * part.quantity).toLocaleString('es-CL')}</TableCell>
+                                        <TableCell className="text-right">${(part.price || 0).toLocaleString('es-CL')}</TableCell>
+                                        <TableCell className="text-right font-semibold">${((part.price || 0) * (part.quantity || 0)).toLocaleString('es-CL')}</TableCell>
                                     </TableRow>
                                 )) : (
                                     <TableRow>
@@ -424,5 +554,3 @@ export default function WorkOrderDetailPage({
     </>
   );
 }
-
-    

@@ -1,8 +1,9 @@
 
 "use client";
 
+import { useEffect, useState } from "react";
 import { notFound } from "next/navigation";
-import { fleetContracts, vehicles } from "@/lib/data";
+import { supabase } from "@/lib/supabase";
 import { DashboardHeader } from "@/components/dashboard-header";
 import {
   Card,
@@ -27,18 +28,45 @@ import { getStatusVariant } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
-import { useState } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function ContractDetailPage({ params }: { params: { id: string } }) {
   const { toast } = useToast();
-  const contract = fleetContracts.find((c) => c.id === params.id);
+  const [contract, setContract] = useState<any | null>(null);
+  const [contractVehicles, setContractVehicles] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [attachedFiles, setAttachedFiles] = useState(["Contrato_Maestro_2024.pdf"]);
 
-  if (!contract) {
-    notFound();
-  }
+  useEffect(() => {
+    async function fetchData() {
+      setLoading(true);
 
-  const contractVehicles = vehicles.slice(0, contract.vehicleCount); // Simulación de vehículos de la flota
+      const { data: contractData, error: contractError } = await supabase
+        .from("fleet_contracts")
+        .select("*, clients(name, email, phone)")
+        .eq("id", params.id)
+        .single();
+
+      if (contractError || !contractData) {
+        setContract(null);
+        setLoading(false);
+        return;
+      }
+
+      setContract(contractData);
+
+      const { data: vehiclesData } = await supabase
+        .from("vehicles")
+        .select("*")
+        .eq("client_id", contractData.client_id)
+        .limit(contractData.vehicle_count || 10);
+
+      setContractVehicles(vehiclesData || []);
+      setLoading(false);
+    }
+
+    fetchData();
+  }, [params.id]);
 
   const handleUpload = () => {
     toast({
@@ -56,6 +84,73 @@ export default function ContractDetailPage({ params }: { params: { id: string } 
       description: `Se está descargando el archivo: ${fileName}.`,
     });
   };
+
+  if (loading) {
+    return (
+      <div className="flex flex-col h-[calc(100vh-57px)]">
+        <DashboardHeader title="Cargando contrato...">
+          <Skeleton className="h-10 w-40" />
+        </DashboardHeader>
+        <main className="flex-1 p-6 grid md:grid-cols-3 gap-6 overflow-y-auto">
+          <div className="md:col-span-2 space-y-6">
+            <Card>
+              <CardHeader>
+                <Skeleton className="h-6 w-64" />
+                <Skeleton className="h-4 w-96 mt-2" />
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <Skeleton key={i} className="h-10 w-full" />
+                ))}
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <Skeleton className="h-6 w-72" />
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Skeleton className="h-12 w-full" />
+                <Skeleton className="h-12 w-full" />
+              </CardContent>
+            </Card>
+          </div>
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <Skeleton className="h-6 w-48" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-4 w-full" />
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <Skeleton className="h-6 w-32" />
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-3/4" />
+                <Skeleton className="h-4 w-2/3" />
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <Skeleton className="h-6 w-32" />
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-3/4" />
+              </CardContent>
+            </Card>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  if (!contract) {
+    notFound();
+  }
 
   return (
     <div className="flex flex-col h-[calc(100vh-57px)]">
@@ -87,9 +182,9 @@ export default function ContractDetailPage({ params }: { params: { id: string } 
                 <TableBody>
                   {contractVehicles.map((v) => (
                     <TableRow key={v.id}>
-                      <TableCell className="font-mono">{v.licensePlate}</TableCell>
+                      <TableCell className="font-mono">{v.license_plate}</TableCell>
                       <TableCell>{v.make} {v.model}</TableCell>
-                      <TableCell className="font-mono">{v.motorNumber}</TableCell>
+                      <TableCell className="font-mono">N/A</TableCell>
                       <TableCell>{new Date(new Date().setMonth(new Date().getMonth() - Math.floor(Math.random() * 6))).toLocaleDateString()}</TableCell>
                       <TableCell className="text-right">
                          <Link href={`/dashboard/work-orders`}>
@@ -144,7 +239,7 @@ export default function ContractDetailPage({ params }: { params: { id: string } 
               </Badge>
             </CardHeader>
             <CardContent>
-                <p className="text-sm text-muted-foreground">Plan de Mantenimiento: <strong>{contract.planType}</strong></p>
+                <p className="text-sm text-muted-foreground">Plan de Mantenimiento: <strong>{contract.plan_type}</strong></p>
             </CardContent>
           </Card>
 
@@ -155,9 +250,9 @@ export default function ContractDetailPage({ params }: { params: { id: string } 
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2 text-sm">
-              <p><strong>Razón Social:</strong> {contract.companyName}</p>
-              <p><strong>Contacto:</strong> gerencia@example.com (simulado)</p>
-              <p><strong>Teléfono:</strong> +56 2 2123 4567 (simulado)</p>
+              <p><strong>Razón Social:</strong> {contract.company_name}</p>
+              <p><strong>Contacto:</strong> {contract.clients?.email || "N/A"}</p>
+              <p><strong>Teléfono:</strong> {contract.clients?.phone || "N/A"}</p>
             </CardContent>
           </Card>
           <Card>
@@ -168,10 +263,10 @@ export default function ContractDetailPage({ params }: { params: { id: string } 
             </CardHeader>
             <CardContent className="space-y-2 text-sm">
               <p>
-                <strong>Inicio:</strong> {new Date(contract.startDate).toLocaleDateString()}
+                <strong>Inicio:</strong> {new Date(contract.start_date).toLocaleDateString()}
               </p>
               <p>
-                <strong>Término:</strong> {new Date(contract.endDate).toLocaleDateString()}
+                <strong>Término:</strong> {new Date(contract.end_date).toLocaleDateString()}
               </p>
             </CardContent>
           </Card>

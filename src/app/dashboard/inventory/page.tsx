@@ -1,7 +1,6 @@
-
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { DashboardHeader } from "@/components/dashboard-header";
 import {
   Card,
@@ -20,7 +19,18 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { PlusCircle, MoreHorizontal, Edit, Trash2, ShoppingCart, Search, DollarSign, Package, AlertTriangle, Truck } from "lucide-react";
+import {
+  PlusCircle,
+  MoreHorizontal,
+  Edit,
+  Trash2,
+  ShoppingCart,
+  Search,
+  DollarSign,
+  Package,
+  AlertTriangle,
+  Truck,
+} from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -40,15 +50,16 @@ import {
 import { PartFormDialog } from "@/components/part-form-dialog";
 import type { Part, PurchaseOrder } from "@/types";
 import { useToast } from "@/hooks/use-toast";
-import { parts as initialInventory } from "@/lib/data";
 import { PurchaseOrderDialog } from "@/components/purchase-order-dialog";
 import { KpiCard } from "@/components/kpi-card";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-
+import { Skeleton } from "@/components/ui/skeleton";
+import { supabase } from "@/lib/supabase";
 
 export default function InventoryPage() {
-  const [inventory, setInventory] = useState<Part[]>(initialInventory);
+  const [inventory, setInventory] = useState<Part[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedPart, setSelectedPart] = useState<Part | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isAlertOpen, setIsAlertOpen] = useState(false);
@@ -56,6 +67,32 @@ export default function InventoryPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("all");
   const { toast } = useToast();
+
+  useEffect(() => {
+    fetchInventory();
+  }, []);
+
+  async function fetchInventory() {
+    setLoading(true);
+    const { data, error } = await supabase.from("parts").select("*").order("sku");
+    if (!error && data) {
+      // Mapeamos snake_case de la DB a camelCase del tipo Part
+      const mapped = data.map((p: any) => ({
+        sku: p.sku,
+        name: p.name,
+        stock: p.stock,
+        alertThreshold: p.alert_threshold,
+        location: p.location,
+        cost: p.cost,
+        price: p.price,
+        supplier: p.supplier,
+      })) as Part[];
+      setInventory(mapped);
+    } else {
+      console.error("Error fetching inventory:", error);
+    }
+    setLoading(false);
+  }
 
   const handleNewPart = () => {
     setSelectedPart(null);
@@ -72,43 +109,66 @@ export default function InventoryPage() {
     setIsAlertOpen(true);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (selectedPart) {
-      setInventory(inventory.filter((p) => p.sku !== selectedPart.sku));
-      toast({
-        title: "Repuesto Eliminado",
-        description: `El repuesto ${selectedPart.name} ha sido eliminado.`,
-      });
+      const { error } = await supabase
+        .from("parts")
+        .delete()
+        .eq("sku", selectedPart.sku);
+      if (!error) {
+        setInventory(inventory.filter((p) => p.sku !== selectedPart.sku));
+        toast({
+          title: "Repuesto Eliminado",
+          description: `El repuesto ${selectedPart.name} ha sido eliminado.`,
+        });
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Error al eliminar",
+          description: "No se pudo eliminar el repuesto.",
+        });
+      }
     }
     setIsAlertOpen(false);
     setSelectedPart(null);
   };
 
-  const handleFormSubmit = (data: Part) => {
-    if (!selectedPart && inventory.some(p => p.sku === data.sku)) {
-        toast({
-            variant: "destructive",
-            title: "Error de SKU",
-            description: "El SKU ya existe. Por favor, utilice uno diferente.",
-        });
-        return;
+  const handleFormSubmit = async (data: Part) => {
+    if (!selectedPart && inventory.some((p) => p.sku === data.sku)) {
+      toast({
+        variant: "destructive",
+        title: "Error de SKU",
+        description: "El SKU ya existe. Por favor, utilice uno diferente.",
+      });
+      return;
     }
 
+    const dbData = {
+      sku: data.sku,
+      name: data.name,
+      stock: data.stock,
+      alert_threshold: data.alertThreshold,
+      location: data.location,
+      cost: data.cost,
+      price: data.price,
+      supplier: data.supplier,
+    };
+
     if (selectedPart) {
-      const updatedInventory = inventory.map((p) =>
-        p.sku === selectedPart.sku ? data : p
-      );
-      setInventory(updatedInventory);
-      toast({
-        title: "Repuesto Actualizado",
-        description: "Los datos del repuesto han sido actualizados.",
-      });
+      const { error } = await supabase
+        .from("parts")
+        .update(dbData)
+        .eq("sku", selectedPart.sku);
+      if (!error) {
+        setInventory(inventory.map((p) => (p.sku === selectedPart.sku ? data : p)));
+        toast({ title: "Repuesto Actualizado", description: "Los datos han sido actualizados." });
+      }
     } else {
-      setInventory([...inventory, data]);
-      toast({
-        title: "Repuesto Creado",
-        description: "El nuevo repuesto ha sido añadido al inventario.",
-      });
+      const { error } = await supabase.from("parts").insert(dbData);
+      if (!error) {
+        setInventory([...inventory, data]);
+        toast({ title: "Repuesto Creado", description: "El nuevo repuesto ha sido añadido." });
+      }
     }
     setIsFormOpen(false);
     setSelectedPart(null);
@@ -117,100 +177,142 @@ export default function InventoryPage() {
   const handlePurchaseOrderSubmit = (data: PurchaseOrder) => {
     console.log("Nueva Orden de Compra (Simulación):", data);
     toast({
-        title: "Orden de Compra Enviada (Simulación)",
-        description: `Se ha enviado una orden de compra a ${data.supplier} con ${data.items.length} ítems.`,
+      title: "Orden de Compra Enviada (Simulación)",
+      description: `Se ha enviado una orden de compra a ${data.supplier} con ${data.items.length} ítems.`,
     });
     setIsPurchaseOrderOpen(false);
   };
 
   const inventoryKpis = useMemo(() => {
-    const totalValue = inventory.reduce((acc, part) => acc + (part.cost * part.stock), 0);
-    const lowStockCount = inventory.filter(p => p.stock <= p.alertThreshold && p.stock > 0).length;
-    const outOfStockCount = inventory.filter(p => p.stock === 0).length;
+    const totalValue = inventory.reduce(
+      (acc, part) => acc + part.cost * part.stock,
+      0
+    );
+    const lowStockCount = inventory.filter(
+      (p) => p.stock <= p.alertThreshold && p.stock > 0
+    ).length;
+    const outOfStockCount = inventory.filter((p) => p.stock === 0).length;
     return { totalValue, lowStockCount, outOfStockCount };
   }, [inventory]);
 
   const filteredInventory = useMemo(() => {
     let items = inventory;
-    
-    if (activeTab === 'low') {
-        items = items.filter(part => part.stock > 0 && part.stock <= part.alertThreshold);
-    } else if (activeTab === 'out') {
-        items = items.filter(part => part.stock === 0);
+
+    if (activeTab === "low") {
+      items = items.filter((p) => p.stock > 0 && p.stock <= p.alertThreshold);
+    } else if (activeTab === "out") {
+      items = items.filter((p) => p.stock === 0);
     }
 
-    return items.filter(part =>
+    return items.filter(
+      (part) =>
         part.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         part.sku.toLowerCase().includes(searchTerm.toLowerCase())
-    ).sort((a,b) => a.sku.localeCompare(b.sku));
+    );
   }, [inventory, searchTerm, activeTab]);
 
   const InventoryTable = ({ parts }: { parts: Part[] }) => (
-     <div className="border rounded-md">
-        <Table>
-            <TableHeader>
-            <TableRow>
-                <TableHead>SKU</TableHead>
-                <TableHead>Nombre del Producto</TableHead>
-                <TableHead>Stock Actual</TableHead>
-                <TableHead>Ubicación</TableHead>
-                <TableHead>Costo Unitario</TableHead>
-                <TableHead>Precio Venta</TableHead>
-                <TableHead className="text-right">Acciones</TableHead>
-            </TableRow>
-            </TableHeader>
-            <TableBody>
-            {parts.length > 0 ? parts.map((item) => (
-                <TableRow key={item.sku} className={item.stock > 0 && item.stock <= item.alertThreshold ? 'bg-amber-800/20' : item.stock === 0 ? 'bg-destructive/20' : ''}>
+    <div className="border rounded-md">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>SKU</TableHead>
+            <TableHead>Nombre del Producto</TableHead>
+            <TableHead>Stock Actual</TableHead>
+            <TableHead>Ubicación</TableHead>
+            <TableHead>Costo Unitario</TableHead>
+            <TableHead>Precio Venta</TableHead>
+            <TableHead className="text-right">Acciones</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {parts.length > 0 ? (
+            parts.map((item) => (
+              <TableRow
+                key={item.sku}
+                className={
+                  item.stock > 0 && item.stock <= item.alertThreshold
+                    ? "bg-amber-800/20"
+                    : item.stock === 0
+                    ? "bg-destructive/20"
+                    : ""
+                }
+              >
                 <TableCell className="font-mono">{item.sku}</TableCell>
                 <TableCell className="font-medium">{item.name}</TableCell>
                 <TableCell>
-                    <Badge
-                    variant={item.stock === 0 ? "destructive" : item.stock <= item.alertThreshold ? "default" : "outline"}
-                    className={item.stock <= item.alertThreshold && item.stock > 0 ? "bg-amber-500 text-black" : ""}
-                    >
+                  <Badge
+                    variant={
+                      item.stock === 0
+                        ? "destructive"
+                        : item.stock <= item.alertThreshold
+                        ? "default"
+                        : "outline"
+                    }
+                    className={
+                      item.stock <= item.alertThreshold && item.stock > 0
+                        ? "bg-amber-500 text-black"
+                        : ""
+                    }
+                  >
                     {item.stock} unidades
-                    </Badge>
+                  </Badge>
                 </TableCell>
                 <TableCell>{item.location}</TableCell>
-                <TableCell>${item.cost.toLocaleString('es-CL')}</TableCell>
-                <TableCell>${item.price.toLocaleString('es-CL')}</TableCell>
+                <TableCell>${item.cost.toLocaleString("es-CL")}</TableCell>
+                <TableCell>${item.price.toLocaleString("es-CL")}</TableCell>
                 <TableCell className="text-right">
-                    <DropdownMenu>
+                  <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
+                      <Button variant="ghost" size="icon">
                         <MoreHorizontal className="h-4 w-4" />
                         <span className="sr-only">Acciones</span>
-                        </Button>
+                      </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => handleEditPart(item)}>
+                      <DropdownMenuItem onClick={() => handleEditPart(item)}>
                         <Edit className="mr-2 h-4 w-4" />
                         Editar
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
                         className="text-destructive"
                         onClick={() => handleDeletePart(item)}
-                        >
+                      >
                         <Trash2 className="mr-2 h-4 w-4" />
                         Eliminar
-                        </DropdownMenuItem>
+                      </DropdownMenuItem>
                     </DropdownMenuContent>
-                    </DropdownMenu>
+                  </DropdownMenu>
                 </TableCell>
-                </TableRow>
-            )) : (
-                 <TableRow>
-                    <TableCell colSpan={7} className="h-24 text-center">
-                       No se encontraron repuestos con los filtros actuales.
-                    </TableCell>
-                 </TableRow>
-            )}
-            </TableBody>
-        </Table>
+              </TableRow>
+            ))
+          ) : (
+            <TableRow>
+              <TableCell colSpan={7} className="h-24 text-center">
+                No se encontraron repuestos con los filtros actuales.
+              </TableCell>
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
     </div>
   );
 
+  if (loading) {
+    return (
+      <div className="flex flex-col h-[calc(100vh-57px)]">
+        <DashboardHeader title="Dashboard de Inventario" />
+        <main className="flex-1 p-6 space-y-4">
+          <div className="grid gap-6 md:grid-cols-4">
+            {[1, 2, 3, 4].map((i) => (
+              <Skeleton key={i} className="h-28" />
+            ))}
+          </div>
+          <Skeleton className="h-64 w-full" />
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-[calc(100vh-57px)]">
@@ -225,48 +327,70 @@ export default function InventoryPage() {
         </Button>
       </DashboardHeader>
       <main className="flex-1 p-6 space-y-6 overflow-y-auto">
-        
         {/* KPIs */}
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-             <KpiCard title="Valor Total Inventario" value={`$${inventoryKpis.totalValue.toLocaleString('es-CL')}`} description="Basado en costo de compra" icon={DollarSign} />
-             <KpiCard title="Repuestos con Bajo Stock" value={inventoryKpis.lowStockCount.toString()} description="Ítems que necesitan reorden" icon={AlertTriangle} />
-             <KpiCard title="Repuestos Agotados" value={inventoryKpis.outOfStockCount.toString()} description="Ítems con stock cero" icon={Package}/>
-             <KpiCard title="Proveedor Principal" value="Repuestos Express" description="Basado en volumen de compra" icon={Truck}/>
+          <KpiCard
+            title="Valor Total Inventario"
+            value={`$${inventoryKpis.totalValue.toLocaleString("es-CL")}`}
+            description="Basado en costo de compra"
+            icon={DollarSign}
+          />
+          <KpiCard
+            title="Repuestos con Bajo Stock"
+            value={inventoryKpis.lowStockCount.toString()}
+            description="Ítems que necesitan reorden"
+            icon={AlertTriangle}
+          />
+          <KpiCard
+            title="Repuestos Agotados"
+            value={inventoryKpis.outOfStockCount.toString()}
+            description="Ítems con stock cero"
+            icon={Package}
+          />
+          <KpiCard
+            title="Total Productos"
+            value={inventory.length.toString()}
+            description="SKUs registrados en BD"
+            icon={Truck}
+          />
         </div>
 
         <Card>
           <CardHeader>
             <CardTitle>Gestión de Repuestos e Insumos</CardTitle>
             <div className="flex justify-between items-center">
-                <CardDescription>
-                    Controla tu stock en tiempo real, define alertas y gestiona tus productos.
-                </CardDescription>
-                 <div className="w-full max-w-sm">
-                    <Input
-                        placeholder="Buscar por nombre o SKU..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        startIcon={Search}
-                    />
+              <CardDescription>
+                Controla tu stock en tiempo real, define alertas y gestiona tus productos.
+              </CardDescription>
+              <div className="w-full max-w-sm">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Buscar por nombre o SKU..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-9"
+                  />
                 </div>
+              </div>
             </div>
           </CardHeader>
           <CardContent>
-             <Tabs value={activeTab} onValueChange={setActiveTab}>
-                <TabsList className="grid w-full grid-cols-3 max-w-md">
-                    <TabsTrigger value="all">Todos</TabsTrigger>
-                    <TabsTrigger value="low">Bajo Stock</TabsTrigger>
-                    <TabsTrigger value="out">Agotados</TabsTrigger>
-                </TabsList>
-                <TabsContent value="all" className="mt-4">
-                    <InventoryTable parts={filteredInventory} />
-                </TabsContent>
-                <TabsContent value="low" className="mt-4">
-                    <InventoryTable parts={filteredInventory} />
-                </TabsContent>
-                <TabsContent value="out" className="mt-4">
-                    <InventoryTable parts={filteredInventory} />
-                </TabsContent>
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
+              <TabsList className="grid w-full grid-cols-3 max-w-md">
+                <TabsTrigger value="all">Todos</TabsTrigger>
+                <TabsTrigger value="low">Bajo Stock</TabsTrigger>
+                <TabsTrigger value="out">Agotados</TabsTrigger>
+              </TabsList>
+              <TabsContent value="all" className="mt-4">
+                <InventoryTable parts={filteredInventory} />
+              </TabsContent>
+              <TabsContent value="low" className="mt-4">
+                <InventoryTable parts={filteredInventory} />
+              </TabsContent>
+              <TabsContent value="out" className="mt-4">
+                <InventoryTable parts={filteredInventory} />
+              </TabsContent>
             </Tabs>
           </CardContent>
         </Card>
@@ -279,7 +403,7 @@ export default function InventoryPage() {
         part={selectedPart}
       />
 
-       <PurchaseOrderDialog
+      <PurchaseOrderDialog
         isOpen={isPurchaseOrderOpen}
         onOpenChange={setIsPurchaseOrderOpen}
         onSubmit={handlePurchaseOrderSubmit}
@@ -290,8 +414,8 @@ export default function InventoryPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta acción no se puede deshacer. Esto eliminará permanentemente
-              el repuesto del inventario.
+              Esta acción no se puede deshacer. Esto eliminará permanentemente el
+              repuesto del inventario.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -310,5 +434,3 @@ export default function InventoryPage() {
     </div>
   );
 }
-
-    

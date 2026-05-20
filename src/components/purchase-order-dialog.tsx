@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   Form,
   FormControl,
@@ -31,9 +31,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "./ui/select";
-import { parts as inventoryParts } from "@/lib/data";
 import { Trash2, PlusCircle } from "lucide-react";
 import { Separator } from "./ui/separator";
+import { supabase } from "@/lib/supabase";
 
 const purchaseOrderItemSchema = z.object({
   sku: z.string().min(1, "Debe seleccionar un repuesto."),
@@ -61,6 +61,16 @@ export function PurchaseOrderDialog({
   onOpenChange,
   onSubmit,
 }: PurchaseOrderDialogProps) {
+  const [inventoryParts, setInventoryParts] = useState<any[]>([]);
+
+  useEffect(() => {
+    supabase.from("parts").select("*").order("name").then(({ data }) => {
+      if (data) setInventoryParts(data.map((p: any) => ({
+        sku: p.sku, name: p.name, stock: p.stock, alertThreshold: p.alert_threshold,
+      })));
+    });
+  }, []);
+
   const form = useForm<PurchaseOrderFormData>({
     resolver: zodResolver(purchaseOrderSchema),
     defaultValues: {
@@ -75,21 +85,21 @@ export function PurchaseOrderDialog({
   });
 
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && inventoryParts.length > 0) {
         // Pre-fill with low-stock items
         const lowStockItems = inventoryParts
             .filter(p => p.stock <= p.alertThreshold)
-            .map(p => ({ sku: p.sku, name: p.name, quantity: p.alertThreshold * 2 })); // Suggest ordering double the threshold
+            .map(p => ({ sku: p.sku, name: p.name, quantity: p.alertThreshold * 2 }));
       
         form.reset({
             supplier: "",
             items: lowStockItems,
         });
     }
-  }, [form, isOpen]);
+  }, [form, isOpen, inventoryParts]);
 
   const handlePartSelection = (sku: string, index: number) => {
-    const part = inventoryParts.find((p) => p.sku === sku);
+    const part = inventoryParts.find((p: any) => p.sku === sku);
     if (part) {
       form.setValue(`items.${index}.sku`, part.sku);
       form.setValue(`items.${index}.name`, part.name);

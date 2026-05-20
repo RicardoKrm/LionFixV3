@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { DashboardHeader } from "@/components/dashboard-header";
 import {
   Card,
@@ -19,8 +19,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { clients, vehicles } from "@/lib/data";
-import type { Client, Vehicle, Notification } from "@/types";
+import { Skeleton } from "@/components/ui/skeleton";
+import { supabase } from "@/lib/supabase";
+import type { Notification } from "@/types";
 import { Bot, Send, MessageSquare, Mail, PlusCircle, MoreHorizontal, Edit, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -55,80 +56,111 @@ import {
 } from "@/components/ui/alert-dialog";
 
 
-// Simulación de notificaciones que el sistema gestionaría.
-const initialNotifications: Notification[] = [
-  {
-    id: "N001",
-    clientId: "C001",
-    vehicleId: "V001",
-    type: "Mantención 20.000km",
-    sendDate: "2024-08-15",
-    lastServiceDate: "hace 6 meses",
-    status: "Programada",
-    channel: "Email"
-  },
-  {
-    id: "N002",
-    clientId: "C002",
-    vehicleId: "V002",
-    type: "Revisión de Frenos",
-    sendDate: "2024-08-20",
-    lastServiceDate: "hace 1 año",
-    status: "Programada",
-    channel: "WhatsApp"
-  },
-  {
-    id: "N003",
-    clientId: "C003",
-    vehicleId: "V003",
-    type: "Vencimiento Garantía A/C",
-    sendDate: "2024-07-25",
-    lastServiceDate: "hace 11 meses",
-    status: "Enviada",
-    channel: "Email"
-  },
-];
+// Maps a Supabase reminder row (with joined relations) to local Notification shape
+function mapRow(row: any): Notification & { _clientName?: string; _vehicleLabel?: string } {
+  return {
+    id: row.id,
+    clientId: row.client_id,
+    vehicleId: row.vehicle_id,
+    type: row.type,
+    sendDate: row.send_date,
+    lastServiceDate: row.last_service_date ?? undefined,
+    status: row.status,
+    channel: row.channel ?? undefined,
+    // Carry joined display strings for the table & AI
+    _clientName: row.clients?.name ?? "N/A",
+    _vehicleLabel: row.vehicles
+      ? `${row.vehicles.make} ${row.vehicles.model}`
+      : "N/A",
+  };
+}
+
+type EnrichedNotification = Notification & {
+  _clientName?: string;
+  _vehicleLabel?: string;
+};
 
 
 export default function RemindersPage() {
-  const [notifications, setNotifications] = useState<Notification[]>(initialNotifications);
-  const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
+  const [notifications, setNotifications] = useState<EnrichedNotification[]>([]);
+  const [selectedNotification, setSelectedNotification] = useState<EnrichedNotification | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isAlertOpen, setIsAlertOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isPageLoading, setIsPageLoading] = useState(true);
   const [generatedMessage, setGeneratedMessage] = useState("");
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const { toast } = useToast();
+
+  // ── Load reminders from Supabase ────────────────────────────────
+  useEffect(() => {
+    async function fetchReminders() {
+      setIsPageLoading(true);
+      const { data, error } = await supabase
+        .from("reminders")
+        .select("*, clients(name), vehicles(make, model, license_plate)")
+        .order("send_date", { ascending: true });
+
+      if (error) {
+        console.error("Error loading reminders:", error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "No se pudieron cargar las notificaciones.",
+        });
+      } else {
+        setNotifications((data ?? []).map(mapRow));
+      }
+      setIsPageLoading(false);
+    }
+    fetchReminders();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ── Handlers ────────────────────────────────────────────────────
 
   const handleNew = () => {
     setSelectedNotification(null);
     setIsFormOpen(true);
   };
   
-  const handleEdit = (notification: Notification) => {
+  const handleEdit = (notification: EnrichedNotification) => {
     setSelectedNotification(notification);
     setIsFormOpen(true);
   };
   
-  const handleDelete = (notification: Notification) => {
+  const handleDelete = (notification: EnrichedNotification) => {
     setSelectedNotification(notification);
     setIsAlertOpen(true);
   }
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (selectedNotification) {
-      setNotifications(notifications.filter((n) => n.id !== selectedNotification.id));
-      toast({
-        title: "Notificación Eliminada",
-        description: `La notificación ha sido eliminada de la cola.`,
-        variant: "destructive",
-      });
+      const { error } = await supabase
+        .from("reminders")
+        .delete()
+        .eq("id", selectedNotification.id);
+
+      if (error) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "No se pudo eliminar la notificación.",
+        });
+      } else {
+        setNotifications(notifications.filter((n) => n.id !== selectedNotification.id));
+        toast({
+          title: "Notificación Eliminada",
+          description: `La notificación ha sido eliminada de la cola.`,
+          variant: "destructive",
+        });
+      }
     }
     setIsAlertOpen(false);
     setSelectedNotification(null);
   }
 
-  const handleGenerateClick = async (notification: Notification) => {
+  const handleGenerateClick = async (notification: EnrichedNotification) => {
     setSelectedNotification(notification);
     setGeneratedMessage("");
     setIsLoading(true);
@@ -136,8 +168,8 @@ export default function RemindersPage() {
 
     try {
       const result = await generateMaintenanceReminder({
-        customerName: clients.find(c => c.id === notification.clientId)?.name || "",
-        vehicle: `${vehicles.find(v => v.id === notification.vehicleId)?.make} ${vehicles.find(v => v.id === notification.vehicleId)?.model}`,
+        customerName: notification._clientName || "",
+        vehicle: notification._vehicleLabel || "",
         lastServiceDate: notification.lastServiceDate || 'hace poco',
       });
       setGeneratedMessage(result);
@@ -154,57 +186,128 @@ export default function RemindersPage() {
     }
   };
 
-  const handleSend = (channel: 'WhatsApp' | 'Email') => {
+  const handleSend = async (channel: 'WhatsApp' | 'Email') => {
     if (!selectedNotification) return;
-    
-    // Mark as sent
-    setNotifications(notifications.map(n => n.id === selectedNotification.id ? {...n, status: 'Enviada', channel} : n));
 
-    toast({
+    const { error } = await supabase
+      .from("reminders")
+      .update({ status: "Enviada", channel })
+      .eq("id", selectedNotification.id);
+
+    if (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo actualizar el estado de la notificación.",
+      });
+    } else {
+      setNotifications(notifications.map(n =>
+        n.id === selectedNotification.id ? { ...n, status: 'Enviada' as const, channel } : n
+      ));
+
+      toast({
         title: "Envío Simulado",
-        description: `La notificación para ${clients.find(c => c.id === selectedNotification.clientId)?.name} ha sido enviada por ${channel}.`
-    });
+        description: `La notificación para ${selectedNotification._clientName} ha sido enviada por ${channel}.`
+      });
+    }
     
     setIsPreviewOpen(false);
     setSelectedNotification(null);
     setGeneratedMessage("");
   }
   
-  const handleProcessQueue = () => {
+  const handleProcessQueue = async () => {
     setIsLoading(true);
     toast({
       title: "Procesando Cola...",
       description: "Simulando el envío de notificaciones programadas."
     });
 
-    setTimeout(() => {
-      const programmedCount = notifications.filter(n => n.status === 'Programada').length;
-      setNotifications(notifications.map(n => n.status === 'Programada' ? { ...n, status: 'Enviada' } : n));
+    const programmedIds = notifications
+      .filter(n => n.status === 'Programada')
+      .map(n => n.id);
+
+    if (programmedIds.length === 0) {
       setIsLoading(false);
+      return;
+    }
+
+    const { error } = await supabase
+      .from("reminders")
+      .update({ status: "Enviada" })
+      .in("id", programmedIds);
+
+    if (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo procesar la cola.",
+      });
+    } else {
+      setNotifications(notifications.map(n =>
+        n.status === 'Programada' ? { ...n, status: 'Enviada' as const } : n
+      ));
       toast({
         title: "Cola Procesada",
-        description: `${programmedCount} notificaciones han sido marcadas como 'Enviadas'.`
+        description: `${programmedIds.length} notificaciones han sido marcadas como 'Enviadas'.`
       });
-    }, 1500);
+    }
+    setIsLoading(false);
   };
   
-  const handleFormSubmit = (data: Omit<Notification, 'id' | 'status'>) => {
-     if (selectedNotification && selectedNotification.id) {
-        // Edit
-        setNotifications(notifications.map(n => n.id === selectedNotification.id ? { ...selectedNotification, ...data } : n));
-        toast({ title: "Notificación Actualizada" });
-     } else {
-        // Create
-        const newNotification: Notification = {
-            id: `N${(notifications.length + 1).toString().padStart(3, '0')}`,
-            status: 'Programada',
-            ...data
-        };
-        setNotifications([newNotification, ...notifications]);
-        toast({ title: "Notificación Creada" });
-     }
-     setIsFormOpen(false);
-     setSelectedNotification(null);
+  const handleFormSubmit = async (data: Omit<Notification, 'id' | 'status'>) => {
+    const dbPayload = {
+      client_id: data.clientId,
+      vehicle_id: data.vehicleId,
+      type: data.type,
+      send_date: data.sendDate,
+      last_service_date: data.lastServiceDate || null,
+      channel: data.channel || null,
+    };
+
+    if (selectedNotification && selectedNotification.id) {
+      // Edit
+      const { error } = await supabase
+        .from("reminders")
+        .update(dbPayload)
+        .eq("id", selectedNotification.id);
+
+      if (error) {
+        toast({ variant: "destructive", title: "Error", description: "No se pudo actualizar." });
+        return;
+      }
+
+      // Re-fetch the updated row with joins to refresh display names
+      const { data: updated } = await supabase
+        .from("reminders")
+        .select("*, clients(name), vehicles(make, model, license_plate)")
+        .eq("id", selectedNotification.id)
+        .single();
+
+      if (updated) {
+        setNotifications(notifications.map(n =>
+          n.id === selectedNotification.id ? mapRow(updated) : n
+        ));
+      }
+      toast({ title: "Notificación Actualizada" });
+    } else {
+      // Create
+      const { data: inserted, error } = await supabase
+        .from("reminders")
+        .insert({ ...dbPayload, status: "Programada" })
+        .select("*, clients(name), vehicles(make, model, license_plate)")
+        .single();
+
+      if (error || !inserted) {
+        toast({ variant: "destructive", title: "Error", description: "No se pudo crear la notificación." });
+        return;
+      }
+
+      setNotifications([mapRow(inserted), ...notifications]);
+      toast({ title: "Notificación Creada" });
+    }
+    setIsFormOpen(false);
+    setSelectedNotification(null);
   }
 
   const handleCloseDialog = () => {
@@ -236,6 +339,20 @@ export default function RemindersPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
+            {isPageLoading ? (
+              <div className="space-y-4">
+                {[...Array(5)].map((_, i) => (
+                  <div key={i} className="flex items-center space-x-4">
+                    <Skeleton className="h-4 w-[140px]" />
+                    <Skeleton className="h-4 w-[160px]" />
+                    <Skeleton className="h-4 w-[180px]" />
+                    <Skeleton className="h-4 w-[100px]" />
+                    <Skeleton className="h-6 w-[90px] rounded-full" />
+                    <Skeleton className="h-8 w-8 rounded-md" />
+                  </div>
+                ))}
+              </div>
+            ) : (
             <Table>
               <TableHeader>
                 <TableRow>
@@ -249,13 +366,10 @@ export default function RemindersPage() {
               </TableHeader>
               <TableBody>
                 {notifications.map((notification) => {
-                  const client = clients.find(c => c.id === notification.clientId);
-                  const vehicle = vehicles.find(v => v.id === notification.vehicleId);
-
                   return (
                   <TableRow key={notification.id}>
-                    <TableCell className="font-medium">{client?.name}</TableCell>
-                    <TableCell>{vehicle ? `${vehicle.make} ${vehicle.model}` : 'N/A'}</TableCell>
+                    <TableCell className="font-medium">{notification._clientName}</TableCell>
+                    <TableCell>{notification._vehicleLabel || 'N/A'}</TableCell>
                     <TableCell>{notification.type}</TableCell>
                     <TableCell>{new Date(notification.sendDate).toLocaleDateString()}</TableCell>
                     <TableCell>
@@ -290,6 +404,7 @@ export default function RemindersPage() {
                 )})}
               </TableBody>
             </Table>
+            )}
           </CardContent>
         </Card>
       </main>
@@ -329,7 +444,7 @@ export default function RemindersPage() {
              <DialogHeader>
                 <DialogTitle>Previsualización del Mensaje</DialogTitle>
                 <DialogDescription>
-                    Revisa el mensaje generado por la IA antes de enviarlo a {selectedNotification && clients.find(c => c.id === selectedNotification.clientId)?.name}.
+                    Revisa el mensaje generado por la IA antes de enviarlo a {selectedNotification?._clientName}.
                 </DialogDescription>
              </DialogHeader>
              <div className="py-4 space-y-4">

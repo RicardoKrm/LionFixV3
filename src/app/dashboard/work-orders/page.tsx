@@ -1,137 +1,155 @@
 
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { DashboardHeader } from "@/components/dashboard-header";
 import { WorkOrderCard } from "@/components/work-order-card";
-import { workOrders as initialWorkOrders, clients, vehicles, parts as initialParts } from "@/lib/data";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PlusCircle, Search } from "lucide-react";
-import type { EnrichedWorkOrder, WorkOrder, Part, WorkOrderStatus } from "@/types";
+import type { WorkOrderStatus } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 import { WorkOrderFormDialog } from "@/components/work-order-form-dialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LicensePlateLookup } from "@/components/license-plate-lookup";
+import { Skeleton } from "@/components/ui/skeleton";
+import { supabase } from "@/lib/supabase";
 
 
 export default function WorkOrdersPage() {
-  const [workOrders, setWorkOrders] = useState<WorkOrder[]>(initialWorkOrders);
-  const [inventory, setInventory] = useState<Part[]>(initialParts);
+  const [workOrders, setWorkOrders] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [selectedWorkOrder, setSelectedWorkOrder] = useState<WorkOrder | null>(null);
   const [statusFilter, setStatusFilter] = useState<"activas" | "finalizadas" | "todas">("activas");
   const [searchTerm, setSearchTerm] = useState("");
   const { toast } = useToast();
 
+  useEffect(() => {
+    fetchWorkOrders();
+  }, []);
+
+  async function fetchWorkOrders() {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from("work_orders")
+      .select(`
+        *,
+        clients(name),
+        vehicles(make, model, license_plate, year)
+      `)
+      .order("entry_date", { ascending: false });
+
+    if (!error && data) {
+      // Enriquecer con campos de compatibilidad
+      const enriched = data.map((wo: any) => ({
+        ...wo,
+        client: wo.clients || { name: "N/A" },
+        vehicle: wo.vehicles || { make: "", model: "", license_plate: "" },
+        entryDate: wo.entry_date,
+        service: wo.service_description || wo.service || "",
+      }));
+      setWorkOrders(enriched);
+    } else {
+      console.error("Error fetching work orders:", error);
+    }
+    setLoading(false);
+  }
+
   const handleNewOrder = () => {
-    setSelectedWorkOrder(null);
     setIsFormOpen(true);
   };
-  
-  const enrichedWorkOrders: EnrichedWorkOrder[] = useMemo(() => 
-    workOrders
-      .map((wo) => ({
-        ...wo,
-        client: clients.find((c) => c.id === wo.clientId)!,
-        vehicle: vehicles.find((v) => v.id === wo.vehicleId)!,
-      }))
-      .sort(
-        (a, b) => new Date(b.entryDate).getTime() - new Date(a.entryDate).getTime()
-      )
-  , [workOrders]);
   
   const filteredWorkOrders = useMemo(() => {
     const activeStatuses: WorkOrderStatus[] = ['Recibido', 'Esperando Aprobación', 'En Reparación', 'Esperando Repuestos'];
     const finishedStatuses: WorkOrderStatus[] = ['Completado', 'Entregado'];
 
-    let filtered = enrichedWorkOrders;
+    let filtered = workOrders;
 
-    // Filter by status
     if (statusFilter === "activas") {
       filtered = filtered.filter(wo => activeStatuses.includes(wo.status));
     } else if (statusFilter === "finalizadas") {
       filtered = filtered.filter(wo => finishedStatuses.includes(wo.status));
     }
 
-    // Filter by search term
     if (searchTerm) {
       const lowercasedTerm = searchTerm.toLowerCase();
       filtered = filtered.filter(wo => 
-        wo.client.name.toLowerCase().includes(lowercasedTerm) ||
-        wo.vehicle.licensePlate.toLowerCase().includes(lowercasedTerm) ||
-        wo.service.toLowerCase().includes(lowercasedTerm)
+        wo.client?.name?.toLowerCase().includes(lowercasedTerm) ||
+        wo.vehicle?.license_plate?.toLowerCase().includes(lowercasedTerm) ||
+        wo.service?.toLowerCase().includes(lowercasedTerm)
       );
     }
     
-    return filtered.slice(0, 30); // Limit to 30 results
-  }, [enrichedWorkOrders, statusFilter, searchTerm]);
+    return filtered.slice(0, 30);
+  }, [workOrders, statusFilter, searchTerm]);
 
-  const handleFormSubmit = (data: Omit<WorkOrder, 'id' | 'entryDate' | 'status'>) => {
-      // Create new work order
-      const newWorkOrder: WorkOrder = {
-        id: `OT-2024-${(workOrders.length + 1).toString().padStart(3, '0')}`,
-        entryDate: new Date().toISOString(),
-        status: 'Recibido',
-        ...data,
+  const handleFormSubmit = async (data: any) => {
+    const { data: newWo, error } = await supabase
+      .from("work_orders")
+      .insert({
+        client_id: data.clientId,
+        vehicle_id: data.vehicleId,
+        service_description: data.service,
+        type: data.type,
+        technician_id: null,
+        labor_hours: data.laborHours,
+        status: "Recibido",
+        parts_used: data.parts || [],
+      })
+      .select(`*, clients(name), vehicles(make, model, license_plate, year)`)
+      .single();
+
+    if (!error && newWo) {
+      const enriched = {
+        ...newWo,
+        client: newWo.clients || { name: "N/A" },
+        vehicle: newWo.vehicles || { make: "", model: "", license_plate: "" },
+        entryDate: newWo.entry_date,
+        service: newWo.service_description,
       };
-      
-      // Deduct parts from inventory
-      const newInventory = [...inventory];
-      let updateSuccessful = true;
-      
-      newWorkOrder.parts.forEach(partUsed => {
-          const inventoryPartIndex = newInventory.findIndex(p => p.sku === partUsed.sku);
-          if (inventoryPartIndex !== -1) {
-              const inventoryPart = newInventory[inventoryPartIndex];
-              if (inventoryPart.stock >= partUsed.quantity) {
-                  newInventory[inventoryPartIndex] = { ...inventoryPart, stock: inventoryPart.stock - partUsed.quantity };
-              } else {
-                  toast({
-                      variant: "destructive",
-                      title: "Error de Stock",
-                      description: `No hay suficiente stock para ${partUsed.name}. Stock disponible: ${inventoryPart.stock}.`,
-                  });
-                  updateSuccessful = false;
-              }
-          } else {
-              toast({
-                  variant: "destructive",
-                  title: "Error de Repuesto",
-                  description: `El repuesto con SKU ${partUsed.sku} no se encontró en el inventario.`,
-              });
-              updateSuccessful = false;
-          }
-      });
-
-      if (!updateSuccessful) {
-          return; // Stop if there was a stock issue
-      }
-
-      setWorkOrders([newWorkOrder, ...workOrders]);
-      setInventory(newInventory); // Update inventory state
-
+      setWorkOrders([enriched, ...workOrders]);
       toast({
         title: "Orden de Trabajo Creada",
-        description: `Se ha creado la orden ${newWorkOrder.id} y se ha actualizado el stock.`,
+        description: "La nueva orden ha sido registrada en la base de datos.",
       });
-    
-      setIsFormOpen(false);
+    } else {
+      toast({
+        variant: "destructive",
+        title: "Error al crear",
+        description: "No se pudo guardar la orden de trabajo.",
+      });
+    }
+    setIsFormOpen(false);
   };
 
+  if (loading) {
+    return (
+      <div className="flex flex-col h-[calc(100vh-57px)]">
+        <DashboardHeader title="Órdenes de Trabajo" />
+        <main className="flex-1 p-6 space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-48" />)}
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-[calc(100vh-57px)]">
       <DashboardHeader title="Órdenes de Trabajo">
         <div className="flex items-center gap-2">
             <div className="w-64">
-                 <Input 
-                    placeholder="Buscar por cliente, patente..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    startIcon={Search}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input 
+                  placeholder="Buscar por cliente, patente..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-9"
                 />
+              </div>
             </div>
             <Button onClick={handleNewOrder} variant="default">
             <PlusCircle className="mr-2 h-4 w-4" />
@@ -170,7 +188,7 @@ export default function WorkOrdersPage() {
         isOpen={isFormOpen}
         onOpenChange={setIsFormOpen}
         onSubmit={handleFormSubmit}
-        workOrder={null} // Always for creation in this view
+        workOrder={null}
       />
     </div>
   );

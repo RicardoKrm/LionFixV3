@@ -14,14 +14,14 @@ import { Input } from "@/components/ui/input";
 import { useForm, useFieldArray, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "./ui/form";
 import type { Quote, Vehicle } from "@/types";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Textarea } from "./ui/textarea";
-import { clients, vehicles } from "@/lib/data";
 import { Trash2, PlusCircle } from "lucide-react";
 import { Separator } from "./ui/separator";
+import { supabase } from "@/lib/supabase";
 
 const quoteItemSchema = z.object({
     description: z.string().min(3, "La descripción es requerida."),
@@ -47,7 +47,18 @@ type QuoteFormDialogProps = {
 };
 
 export function QuoteFormDialog({ isOpen, onOpenChange, onSubmit, quote }: QuoteFormDialogProps) {
-  
+  const [clients, setClients] = useState<any[]>([]);
+  const [allVehicles, setAllVehicles] = useState<any[]>([]);
+
+  useEffect(() => {
+    supabase.from("clients").select("id, name").order("name").then(({ data }) => {
+      if (data) setClients(data);
+    });
+    supabase.from("vehicles").select("id, make, model, license_plate, client_id").then(({ data }) => {
+      if (data) setAllVehicles(data);
+    });
+  }, []);
+
   const form = useForm<QuoteFormData>({
     resolver: zodResolver(quoteSchema),
     defaultValues: {
@@ -70,10 +81,8 @@ export function QuoteFormDialog({ isOpen, onOpenChange, onSubmit, quote }: Quote
   const selectedClientId = form.watch("clientId");
   
   const clientVehicles = useMemo(() => {
-    const client = clients.find(c => c.id === selectedClientId);
-    if (!client) return [];
-    return vehicles.filter(v => client.vehicleIds.includes(v.id));
-  }, [selectedClientId]);
+    return allVehicles.filter(v => v.client_id === selectedClientId);
+  }, [selectedClientId, allVehicles]);
 
   useEffect(() => {
     if (isOpen) {
@@ -152,9 +161,9 @@ export function QuoteFormDialog({ isOpen, onOpenChange, onSubmit, quote }: Quote
                                 </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
-                                    {clientVehicles.map((vehicle: Vehicle) => (
+                                    {clientVehicles.map((vehicle: any) => (
                                         <SelectItem key={vehicle.id} value={vehicle.id}>
-                                            {vehicle.make} {vehicle.model} ({vehicle.licensePlate})
+                                            {vehicle.make} {vehicle.model} ({vehicle.license_plate})
                                         </SelectItem>
                                     ))}
                                 </SelectContent>

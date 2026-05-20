@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Form,
   FormControl,
@@ -32,9 +32,9 @@ import {
   SelectValue,
 } from "./ui/select";
 import { Textarea } from "./ui/textarea";
-import { clients, vehicles, parts as inventoryParts, technicians } from "@/lib/data";
 import { Trash2, PlusCircle } from "lucide-react";
 import { Separator } from "./ui/separator";
+import { supabase } from "@/lib/supabase";
 
 const partItemSchema = z.object({
   sku: z.string().min(1, "Debe seleccionar un repuesto."),
@@ -71,6 +71,28 @@ export function WorkOrderFormDialog({
   onSubmit,
   workOrder,
 }: WorkOrderFormDialogProps) {
+  const [clients, setClients] = useState<any[]>([]);
+  const [allVehicles, setAllVehicles] = useState<any[]>([]);
+  const [inventoryParts, setInventoryParts] = useState<any[]>([]);
+  const [technicians, setTechnicians] = useState<any[]>([]);
+
+  useEffect(() => {
+    supabase.from("clients").select("id, name").order("name").then(({ data }) => {
+      if (data) setClients(data);
+    });
+    supabase.from("vehicles").select("id, make, model, license_plate, client_id").then(({ data }) => {
+      if (data) setAllVehicles(data);
+    });
+    supabase.from("parts").select("*").order("name").then(({ data }) => {
+      if (data) setInventoryParts(data.map((p: any) => ({
+        sku: p.sku, name: p.name, cost: p.cost, price: p.price, stock: p.stock,
+      })));
+    });
+    supabase.from("profiles").select("user_id, name").eq("role", "mechanic").then(({ data }) => {
+      if (data) setTechnicians(data);
+    });
+  }, []);
+
   const form = useForm<WorkOrderFormData>({
     resolver: zodResolver(workOrderSchema),
     defaultValues: {
@@ -93,10 +115,8 @@ export function WorkOrderFormDialog({
   const selectedClientId = form.watch("clientId");
 
   const clientVehicles = useMemo(() => {
-    const client = clients.find(c => c.id === selectedClientId);
-    if (!client) return [];
-    return vehicles.filter(v => client.vehicleIds.includes(v.id));
-  }, [selectedClientId]);
+    return allVehicles.filter(v => v.client_id === selectedClientId);
+  }, [selectedClientId, allVehicles]);
 
 
   useEffect(() => {
@@ -200,9 +220,9 @@ export function WorkOrderFormDialog({
                         </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                            {clientVehicles.map((vehicle: Vehicle) => (
+                            {clientVehicles.map((vehicle: any) => (
                                 <SelectItem key={vehicle.id} value={vehicle.id}>
-                                    {vehicle.make} {vehicle.model} ({vehicle.licensePlate})
+                                    {vehicle.make} {vehicle.model} ({vehicle.license_plate})
                                 </SelectItem>
                             ))}
                         </SelectContent>
@@ -269,7 +289,7 @@ export function WorkOrderFormDialog({
                         </FormControl>
                         <SelectContent>
                           {technicians.map(tech => (
-                             <SelectItem key={tech.id} value={tech.name}>{tech.name}</SelectItem>
+                             <SelectItem key={tech.user_id} value={tech.name}>{tech.name}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>

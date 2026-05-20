@@ -1,8 +1,9 @@
 
 "use client";
 
-import { notFound } from "next/navigation";
-import { clients, vehicles, quotes } from "@/lib/data";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabase";
 import { DashboardHeader } from "@/components/dashboard-header";
 import {
   Card,
@@ -26,57 +27,142 @@ import {
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { getStatusVariant } from "@/lib/utils";
-import { useState } from "react";
-import type { QuoteStatus } from "@/types";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function QuoteDetailPage({
   params,
 }: {
   params: { id: string };
 }) {
-  const quote = quotes.find((q) => q.id === params.id);
+  const [quote, setQuote] = useState<any | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [status, setStatus] = useState<string>("Enviada");
   const { toast } = useToast();
-  
-  const [status, setStatus] = useState<QuoteStatus>(quote?.status || 'Enviada');
+  const router = useRouter();
 
+  useEffect(() => {
+    async function fetchQuote() {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from("quotes")
+        .select(
+          "*, clients(name, email, phone), vehicles(make, model, license_plate, year)"
+        )
+        .eq("id", params.id)
+        .single();
 
+      if (error || !data) {
+        console.error("Error fetching quote:", error);
+        setQuote(null);
+      } else {
+        setQuote(data);
+        setStatus(data.status || "Enviada");
+      }
+      setLoading(false);
+    }
+    fetchQuote();
+  }, [params.id]);
+
+  // --- Loading State ---
+  if (loading) {
+    return (
+      <div className="flex flex-col h-[calc(100vh-57px)]">
+        <DashboardHeader title="Cargando Cotización...">
+          <div />
+        </DashboardHeader>
+        <main className="flex-1 p-6 overflow-y-auto bg-muted/30 grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 bg-card p-8 rounded-lg shadow-lg space-y-6">
+            <Skeleton className="h-8 w-1/2" />
+            <Skeleton className="h-6 w-3/4" />
+            <div className="grid grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-4 w-48" />
+                <Skeleton className="h-4 w-40" />
+              </div>
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-4 w-48" />
+                <Skeleton className="h-4 w-40" />
+              </div>
+            </div>
+            <Skeleton className="h-40 w-full" />
+            <div className="flex justify-end">
+              <Skeleton className="h-10 w-48" />
+            </div>
+          </div>
+          <div className="lg:col-span-1 space-y-6">
+            <Skeleton className="h-32 w-full" />
+            <Skeleton className="h-24 w-full" />
+            <Skeleton className="h-32 w-full" />
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // --- Not Found ---
   if (!quote) {
-    notFound();
+    return (
+      <div className="flex flex-col items-center justify-center h-[calc(100vh-57px)]">
+        <h2 className="text-xl font-semibold">Cotización no encontrada</h2>
+        <p className="text-muted-foreground mt-2">
+          No se encontró la cotización con ID: {params.id}
+        </p>
+        <Button className="mt-4" onClick={() => router.back()}>
+          Volver
+        </Button>
+      </div>
+    );
   }
-  
-  const client = clients.find((c) => c.id === quote.clientId);
-  const vehicle = vehicles.find((v) => v.id === quote.vehicleId);
 
-  const handleApprove = () => {
-    setStatus("Aprobada");
-    toast({
-      title: "Cotización Aprobada",
-      description: "La cotización ha sido marcada como aprobada. Puede proceder a crear la Orden de Trabajo.",
-    });
-  }
+  // Extract joined data
+  const client = quote.clients as { name: string; email: string; phone: string } | null;
+  const vehicle = quote.vehicles as { make: string; model: string; license_plate: string; year: number } | null;
+  const items: any[] = Array.isArray(quote.items) ? quote.items : [];
 
-  const handleReject = () => {
-    setStatus("Rechazada");
-    toast({
-      variant: "destructive",
-      title: "Cotización Rechazada",
-      description: "La cotización ha sido marcada como rechazada.",
-    });
-  }
-  
+  const handleApprove = async () => {
+    const { error } = await supabase
+      .from("quotes")
+      .update({ status: "Aprobada" })
+      .eq("id", quote.id);
+    if (!error) {
+      setStatus("Aprobada");
+      toast({
+        title: "Cotización Aprobada",
+        description: "La cotización ha sido marcada como aprobada. Puede proceder a crear la Orden de Trabajo.",
+      });
+    }
+  };
+
+  const handleReject = async () => {
+    const { error } = await supabase
+      .from("quotes")
+      .update({ status: "Rechazada" })
+      .eq("id", quote.id);
+    if (!error) {
+      setStatus("Rechazada");
+      toast({
+        variant: "destructive",
+        title: "Cotización Rechazada",
+        description: "La cotización ha sido marcada como rechazada.",
+      });
+    }
+  };
+
   const handleSend = () => {
     toast({
       title: "Cotización Enviada",
       description: `La cotización ${quote.id} ha sido enviada a ${client?.email}.`,
     });
-  }
-  
+  };
+
   const handleConvertToOT = () => {
     toast({
       title: "Orden de Trabajo Creada (Simulación)",
       description: `Se ha generado la OT-2024-005 a partir de la cotización ${quote.id}.`,
     });
-  }
+  };
 
   if (!client || !vehicle) {
     return <div>Error: Datos de Cliente o Vehículo no encontrados.</div>;
@@ -125,9 +211,8 @@ export default function QuoteDetailPage({
                 </div>
                  <div className="space-y-1.5">
                     <h3 className="font-semibold text-muted-foreground mb-2">VEHÍCULO</h3>
-                    <p><strong className="w-28 inline-block">Patente:</strong> <span className="font-mono uppercase">{vehicle.licensePlate}</span></p>
+                    <p><strong className="w-28 inline-block">Patente:</strong> <span className="font-mono uppercase">{vehicle.license_plate}</span></p>
                     <p><strong className="w-28 inline-block">Marca/Modelo:</strong> {vehicle.make} {vehicle.model} ({vehicle.year})</p>
-                    <p><strong className="w-28 inline-block">VIN:</strong> <span className="font-mono">{vehicle.vin}</span></p>
                 </div>
             </div>
 
@@ -143,12 +228,12 @@ export default function QuoteDetailPage({
                     </TableRow>
                     </TableHeader>
                     <TableBody>
-                    {quote.items.map((item, index) => (
+                    {items.map((item: any, index: number) => (
                         <TableRow key={index}>
                         <TableCell className="font-medium">{item.description}</TableCell>
                         <TableCell className="text-center">{item.quantity}</TableCell>
-                        <TableCell className="text-right">${item.unitPrice.toLocaleString('es-CL')}</TableCell>
-                        <TableCell className="text-right font-semibold">${item.total.toLocaleString('es-CL')}</TableCell>
+                        <TableCell className="text-right">${(item.unitPrice ?? item.unit_price ?? 0).toLocaleString('es-CL')}</TableCell>
+                        <TableCell className="text-right font-semibold">${(item.total ?? 0).toLocaleString('es-CL')}</TableCell>
                         </TableRow>
                     ))}
                     </TableBody>

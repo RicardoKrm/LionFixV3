@@ -1,12 +1,9 @@
-
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import type { User, UserRole } from '@/types';
-// Simulación de Firebase Auth
-// En una app real, importarías: import { auth } from '@/lib/firebase';
-// y usarías onAuthStateChanged, createUserWithEmailAndPassword, etc.
+import { supabase } from '@/lib/supabase';
 
 interface AuthContextType {
   user: User | null;
@@ -18,80 +15,118 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// --- Simulación de una base de datos de usuarios ---
-const MOCK_USERS: { [email: string]: Omit<User, 'uid' | 'email'> & { password_hash: string } } = {
-  'admin@lionfix.com': { name: 'Juan Pérez (Admin)', role: 'admin', password_hash: '123456', avatarUrl: 'https://placehold.co/100x100.png' },
-  'mecanico@lionfix.com': { name: 'Ricardo Milos', role: 'mechanic', password_hash: '123456', avatarUrl: '/avatars/ricardo.png' },
-  'cliente@lionfix.com': { name: 'Ana Martínez', role: 'client', password_hash: '123456', avatarUrl: 'https://placehold.co/100x100.png' },
-};
-
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
-  useEffect(() => {
-    // Simula `onAuthStateChanged`
-    setLoading(true);
-    const storedUser = sessionStorage.getItem('lionfix-user');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
+  const fetchProfile = async (userId: string, email: string): Promise<User | null> => {
+    const { data: profile, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single();
+
+    if (error || !profile) {
+      console.error('Error fetching profile:', error);
+      // Fallback a metadata si no se pudo leer la tabla
+      return null;
     }
-    setLoading(false);
+
+    return {
+      uid: userId,
+      email: email,
+      name: profile.name,
+      role: profile.role as UserRole,
+      avatarUrl: profile.avatar_url,
+    };
+  };
+
+  useEffect(() => {
+    let mounted = true;
+    const initialize = async () => {
+      setLoading(true);
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user && mounted) {
+        const fullUser = await fetchProfile(session.user.id, session.user.email!);
+        if (fullUser && mounted) setUser(fullUser);
+      }
+      if (mounted) setLoading(false);
+    };
+
+    initialize();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' && session?.user) {
+         if (mounted) {
+             const fullUser = await fetchProfile(session.user.id, session.user.email!);
+             if (fullUser) setUser(fullUser);
+         }
+      } else if (event === 'SIGNED_OUT') {
+        if (mounted) setUser(null);
+      }
+    });
+
+    return () => {
+      mounted = false;
+      authListener.subscription.unsubscribe();
+    };
   }, []);
 
   const login = async (email: string, password: string) => {
-    // Simulación de login
-    const foundUser = MOCK_USERS[email.toLowerCase()];
-    if (foundUser && foundUser.password_hash === password) {
-      const loggedInUser: User = {
-        uid: `mock-uid-${email}`,
-        email,
-        name: foundUser.name,
-        role: foundUser.role,
-        avatarUrl: foundUser.avatarUrl,
-      };
-      setUser(loggedInUser);
-      sessionStorage.setItem('lionfix-user', JSON.stringify(loggedInUser));
-      
-      // Redirigir según el rol
-      switch (loggedInUser.role) {
-          case 'admin':
-              router.push('/dashboard');
-              break;
-          case 'mechanic':
-              router.push('/mechanic/dashboard');
-              break;
-          case 'client':
-              router.push('/portal/dashboard');
-              break;
-          default:
-              router.push('/login');
-      }
+    console.log("1. Intentando login en Supabase con:", email);
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    
+    console.log("2. LOGIN DATA RECIBIDA:", data);
+    console.log("3. LOGIN ERROR RECIBIDO:", error);
 
-    } else {
-      throw new Error("Credenciales inválidas.");
+    if (error) throw new Error(error.message);
+    
+    if (data.session?.user) {
+        console.log("4. Login exitoso en Auth. Buscando perfil para UID:", data.session.user.id);
+        const fullUser = await fetchProfile(data.session.user.id, data.session.user.email!);
+        console.log("5. Perfil obtenido (fullUser):", fullUser);
+
+        if (fullUser) {
+            setUser(fullUser);
+            console.log("6. Redirigiendo según el rol:", fullUser.role);
+            switch (fullUser.role) {
+                case 'admin':
+                    router.push('/dashboard');
+                    break;
+                case 'mechanic':
+                    router.push('/mechanic/dashboard');
+                    break;
+                case 'client':
+                    router.push('/portal/dashboard');
+                    break;
+                default:
+                    router.push('/login');
+            }
+        } else {
+            console.error("6. ERROR GRAVE: fetchProfile devolvió null. No se encontró el perfil en la tabla 'profiles'.");
+        }
     }
   };
 
   const signup = async (email: string, password: string, name: string, role: UserRole) => {
-     // Simulación de signup
-     const lowerEmail = email.toLowerCase();
-     if (MOCK_USERS[lowerEmail]) {
-         throw new Error("El email ya está registrado.");
-     }
-     MOCK_USERS[lowerEmail] = {
-         name,
-         role,
-         password_hash: password,
-         avatarUrl: `https://placehold.co/100x100.png`
-     };
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          name,
+          role,
+        }
+      }
+    });
+    if (error) throw new Error(error.message);
   };
 
   const logout = async () => {
-    // Simulación de logout
+    const { error } = await supabase.auth.signOut();
+    if (error) throw new Error(error.message);
     setUser(null);
-    sessionStorage.removeItem('lionfix-user');
     router.push('/');
   };
 

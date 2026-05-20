@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { DashboardHeader } from "@/components/dashboard-header";
 import {
   Card,
@@ -14,7 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { PlusCircle, User, Calendar, MoreHorizontal, Edit, Trash2 } from "lucide-react";
-import { technicians as initialTechnicians } from "@/lib/data";
+import { supabase } from "@/lib/supabase";
 import type { Technician } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -36,14 +36,61 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { TechnicianFormDialog } from "@/components/technician-form-dialog";
+import { Skeleton } from "@/components/ui/skeleton";
 
 
 export default function TechniciansPage() {
-  const [technicians, setTechnicians] = useState<Technician[]>(initialTechnicians);
+  const [technicians, setTechnicians] = useState<Technician[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedTechnician, setSelectedTechnician] = useState<Technician | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isAlertOpen, setIsAlertOpen] = useState(false);
   const { toast } = useToast();
+
+  useEffect(() => {
+    async function fetchTechnicians() {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*, technician_details(*)')
+        .eq('role', 'mechanic');
+
+      if (error) {
+        console.error('Error fetching technicians:', error);
+        toast({
+          title: "Error",
+          description: "No se pudieron cargar los técnicos.",
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
+      }
+
+      if (data) {
+        const mapped: Technician[] = data.map((row: any) => {
+          const details = Array.isArray(row.technician_details)
+            ? row.technician_details[0]
+            : row.technician_details;
+          return {
+            id: row.user_id,
+            name: row.name || '',
+            avatarUrl: details?.avatar_url || '',
+            specialties: details?.specialties || [],
+            hireDate: details?.hire_date || '',
+            contact: row.email || '',
+            baseSalary: 0,
+            extraHourRate: 0,
+            extraHoursThisMonth: details?.extra_hours_this_month || 0,
+            maxExtraHours: details?.max_extra_hours || 40,
+          };
+        });
+        setTechnicians(mapped);
+      }
+      setLoading(false);
+    }
+
+    fetchTechnicians();
+  }, []);
 
   const handleNewTechnician = () => {
     setSelectedTechnician(null);
@@ -109,7 +156,38 @@ export default function TechniciansPage() {
       </DashboardHeader>
       <main className="flex-1 p-6 space-y-6 overflow-y-auto">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {technicians.map((tech) => (
+          {loading ? (
+            Array.from({ length: 6 }).map((_, i) => (
+              <Card key={i} className="flex flex-col">
+                <CardHeader>
+                  <div className="flex justify-between items-start">
+                    <div className="flex items-center gap-4">
+                      <Skeleton className="h-16 w-16 rounded-full" />
+                      <div className="space-y-2">
+                        <Skeleton className="h-5 w-32" />
+                        <Skeleton className="h-4 w-24" />
+                      </div>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="flex-grow space-y-4">
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-24" />
+                    <div className="flex gap-2">
+                      <Skeleton className="h-6 w-20" />
+                      <Skeleton className="h-6 w-20" />
+                    </div>
+                  </div>
+                  <Skeleton className="h-4 w-48" />
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-3 w-full" />
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          ) : (
+          technicians.map((tech) => (
             <Card key={tech.id} className="flex flex-col">
               <CardHeader>
                 <div className="flex justify-between items-start">
@@ -169,7 +247,8 @@ export default function TechniciansPage() {
                 </div>
               </CardContent>
             </Card>
-          ))}
+          ))
+          )}
         </div>
       </main>
     </div>
