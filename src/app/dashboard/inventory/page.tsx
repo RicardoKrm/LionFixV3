@@ -174,12 +174,30 @@ export default function InventoryPage() {
     setSelectedPart(null);
   };
 
-  const handlePurchaseOrderSubmit = (data: PurchaseOrder) => {
-    console.log("Nueva Orden de Compra (Simulación):", data);
-    toast({
-      title: "Orden de Compra Enviada (Simulación)",
-      description: `Se ha enviado una orden de compra a ${data.supplier} con ${data.items.length} ítems.`,
-    });
+  const handlePurchaseOrderSubmit = async (data: PurchaseOrder) => {
+    const total = data.items.reduce((sum: number, item: any) => sum + (item.quantity * item.unitPrice), 0);
+    const { error } = await supabase
+      .from('purchase_orders')
+      .insert({
+        supplier: data.supplier,
+        status: 'Enviada',
+        notes: data.notes || '',
+        total,
+        items: data.items,
+      });
+
+    if (!error) {
+      toast({
+        title: "Orden de Compra Registrada",
+        description: `Orden enviada a ${data.supplier} con ${data.items.length} ítem(s) guardada en la base de datos.`,
+      });
+    } else {
+      toast({
+        variant: "destructive",
+        title: "Error al crear orden de compra",
+        description: error.message,
+      });
+    }
     setIsPurchaseOrderOpen(false);
   };
 

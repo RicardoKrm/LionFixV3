@@ -26,7 +26,8 @@ import { supabase } from "@/lib/supabase";
 import { getStatusVariant } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 
-export default function ClientVehicleHistoryPage({ params }: { params: { id: string } }) {
+export default function ClientVehicleHistoryPage({ params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = React.use(params);
   const router = useRouter();
   const { toast } = useToast();
 
@@ -39,11 +40,11 @@ export default function ClientVehicleHistoryPage({ params }: { params: { id: str
       setLoading(true);
 
       const [vehicleRes, workOrdersRes] = await Promise.all([
-        supabase.from("vehicles").select("*").eq("id", params.id).single(),
+        supabase.from("vehicles").select("*").eq("id", resolvedParams.id).single(),
         supabase
           .from("work_orders")
           .select("*")
-          .eq("vehicle_id", params.id)
+          .eq("vehicle_id", resolvedParams.id)
           .order("entry_date", { ascending: false }),
       ]);
 
@@ -58,7 +59,7 @@ export default function ClientVehicleHistoryPage({ params }: { params: { id: str
     }
 
     fetchData();
-  }, [params.id]);
+  }, [resolvedParams.id]);
 
   const handleDownload = (workOrderId: string) => {
     toast({

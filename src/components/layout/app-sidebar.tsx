@@ -38,6 +38,7 @@ import {
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import Image from "next/image";
 
 export function AppSidebar() {
   const pathname = usePathname();
@@ -51,16 +52,15 @@ export function AppSidebar() {
   return (
     <Sidebar>
       <SidebarHeader>
-        <div className="flex items-center gap-3">
-          <Avatar className="h-12 w-12 bg-sidebar-primary flex items-center justify-center rounded-lg">
-             <ShieldCheck className="text-sidebar-primary-foreground" />
-          </Avatar>
-          <div className="flex flex-col">
-            <h2 className="text-xl font-semibold text-sidebar-foreground">
-              LionFix
-            </h2>
-            <p className="text-sm text-sidebar-foreground/70">Cloud ERP</p>
-          </div>
+        <div className="flex items-center gap-3 px-1 py-1">
+          <Image
+            src="/logo2.png"
+            alt="LionFix Service"
+            width={130}
+            height={65}
+            className="h-14 w-auto object-contain drop-shadow-[0_0_10px_rgba(202,162,0,0.3)]"
+            priority
+          />
         </div>
       </SidebarHeader>
       <SidebarContent className="p-4">
@@ -87,6 +87,17 @@ export function AppSidebar() {
               >
                 <Wrench />
                 <span>Órdenes de Trabajo</span>
+              </SidebarMenuButton>
+            </Link>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <Link href="/dashboard/management/checklists" passHref>
+              <SidebarMenuButton
+                isActive={isActive("/dashboard/management/checklists")}
+                tooltip="Checklists"
+              >
+                <ClipboardCheck />
+                <span>Checklists</span>
               </SidebarMenuButton>
             </Link>
           </SidebarMenuItem>
@@ -145,18 +156,7 @@ export function AppSidebar() {
               </SidebarMenuButton>
             </Link>
           </SidebarMenuItem>
-           <SidebarMenuItem>
-            <Link href="/dashboard/management/checklists" passHref>
-              <SidebarMenuButton
-                isActive={isActive("/dashboard/management/checklists")}
-                tooltip="Checklists"
-              >
-                <ClipboardCheck />
-                <span>Checklists</span>
-              </SidebarMenuButton>
-            </Link>
-          </SidebarMenuItem>
-           <SidebarMenuItem>
+          <SidebarMenuItem>
             <Link href="/dashboard/management/contracts" passHref>
               <SidebarMenuButton
                 isActive={isActive("/dashboard/management/contracts")}

@@ -7,9 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ShieldCheck } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
+import Image from "next/image";
 import { useAuth } from "@/context/auth-context";
 import { Separator } from "@/components/ui/separator";
 
@@ -42,13 +42,17 @@ export default function LoginPage() {
     <main className="flex items-center justify-center min-h-screen bg-background p-4">
       <Card className="w-full max-w-md mx-auto shadow-2xl bg-card border-border">
         <CardHeader className="text-center pb-8 pt-10">
-          <div className="flex justify-center items-center mb-4">
-            <div className="bg-primary text-primary-foreground p-3 rounded-lg shadow-lg">
-              <ShieldCheck className="h-10 w-10" />
-            </div>
+          <div className="flex justify-center items-center mb-2">
+            <Image
+              src="/logo2.png"
+              alt="LionFix Service Logo"
+              width={180}
+              height={90}
+              className="h-28 w-auto object-contain drop-shadow-[0_0_16px_rgba(202,162,0,0.35)]"
+              priority
+            />
           </div>
-          <CardTitle className="text-4xl font-bold text-primary">Servicio LionFix</CardTitle>
-          <CardDescription className="text-xl text-muted-foreground mt-2">
+          <CardDescription className="text-lg text-muted-foreground mt-1">
             Inicia sesión para continuar
           </CardDescription>
         </CardHeader>

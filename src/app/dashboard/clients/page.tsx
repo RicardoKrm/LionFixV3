@@ -47,6 +47,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/lib/supabase";
+import { VehicleFormDialog } from "@/components/vehicle-form-dialog";
 
 export default function ClientsPage() {
   const [clients, setClients] = useState<any[]>([]);
@@ -54,6 +55,8 @@ export default function ClientsPage() {
   const [selectedClient, setSelectedClient] = useState<any | null>(null);
   const [isAlertOpen, setIsAlertOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [isVehicleFormOpen, setIsVehicleFormOpen] = useState(false);
+  const [vehicleFormClient, setVehicleFormClient] = useState<{id: string, name: string} | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -218,6 +221,15 @@ export default function ClientsPage() {
                                   </DropdownMenuTrigger>
                                   <DropdownMenuContent align="end">
                                     <DropdownMenuItem
+                                      onClick={() => {
+                                        setVehicleFormClient({ id: client.id, name: client.name });
+                                        setIsVehicleFormOpen(true);
+                                      }}
+                                    >
+                                      <PlusCircle className="mr-2 h-4 w-4" />
+                                      Añadir Vehículo
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
                                       className="text-destructive"
                                       onClick={() => handleDeleteClient(client)}
                                     >
@@ -324,6 +336,14 @@ export default function ClientsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <VehicleFormDialog
+        isOpen={isVehicleFormOpen}
+        onOpenChange={setIsVehicleFormOpen}
+        clientId={vehicleFormClient?.id || null}
+        clientName={vehicleFormClient?.name}
+        onSuccess={fetchClients}
+      />
     </div>
   );
 }

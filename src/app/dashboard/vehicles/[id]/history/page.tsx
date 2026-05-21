@@ -27,7 +27,8 @@ import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 import { getStatusVariant } from "@/lib/utils";
 
-export default function VehicleHistoryPage({ params }: { params: { id: string } }) {
+export default function VehicleHistoryPage({ params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = React.use(params);
   const router = useRouter();
   const [vehicle, setVehicle] = useState<any | null>(null);
   const [vehicleWorkOrders, setVehicleWorkOrders] = useState<any[]>([]);
@@ -38,11 +39,11 @@ export default function VehicleHistoryPage({ params }: { params: { id: string } 
       setLoading(true);
 
       const [vehicleRes, workOrdersRes] = await Promise.all([
-        supabase.from("vehicles").select("*").eq("id", params.id).single(),
+        supabase.from("vehicles").select("*").eq("id", resolvedParams.id).single(),
         supabase
           .from("work_orders")
           .select("*")
-          .eq("vehicle_id", params.id)
+          .eq("vehicle_id", resolvedParams.id)
           .order("entry_date", { ascending: false }),
       ]);
 
@@ -52,7 +53,7 @@ export default function VehicleHistoryPage({ params }: { params: { id: string } 
     }
 
     fetchData();
-  }, [params.id]);
+  }, [resolvedParams.id]);
 
   if (loading) {
     return (

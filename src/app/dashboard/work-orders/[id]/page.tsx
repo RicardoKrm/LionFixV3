@@ -36,10 +36,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { ObdScannerTool } from "@/components/obd-scanner-tool";
 import { SatisfactionSurveyTool } from "@/components/satisfaction-survey-tool";
 import { WorkOrderStatusTracker } from "@/components/work-order-status-tracker";
 import { Skeleton } from "@/components/ui/skeleton";
+import React from "react";
 
 const LABOR_RATE_PER_HOUR = 25000; // Flat labor cost rate per hour (CLP)
 const LABOR_REVENUE_MULTIPLIER = 2.5; // Revenue markup on labor cost
@@ -47,16 +50,33 @@ const LABOR_REVENUE_MULTIPLIER = 2.5; // Revenue markup on labor cost
 export default function WorkOrderDetailPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
+  const resolvedParams = React.use(params);
   const [workOrder, setWorkOrder] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [newLogEntry, setNewLogEntry] = useState("");
-  const [attachedFiles, setAttachedFiles] = useState(["Diagnostico_Inicial.pdf"]);
+  const [attachedFiles, setAttachedFiles] = useState<{name: string, url: string}[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
+  const [currentUserName, setCurrentUserName] = useState("Administrador");
 
   const { toast } = useToast();
   const router = useRouter();
+
+  useEffect(() => {
+    // Load authenticated user's name for bitácora entries
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('name')
+          .eq('id', user.id)
+          .single();
+        if (profile?.name) setCurrentUserName(profile.name);
+      }
+    });
+  }, []);
 
   useEffect(() => {
     async function fetchWorkOrder() {
@@ -64,7 +84,7 @@ export default function WorkOrderDetailPage({
       const { data, error } = await supabase
         .from('work_orders')
         .select('*, clients(*), vehicles(*), profiles!work_orders_technician_id_fkey(*)')
-        .eq('id', params.id)
+        .eq('id', resolvedParams.id)
         .single();
 
       if (error || !data) {
@@ -72,11 +92,24 @@ export default function WorkOrderDetailPage({
         setWorkOrder(null);
       } else {
         setWorkOrder(data);
+        fetchAttachedFiles();
       }
       setLoading(false);
     }
+    
+    async function fetchAttachedFiles() {
+      const { data, error } = await supabase.storage.from('evidence').list(`work_orders/${resolvedParams.id}`);
+      if (data && !error) {
+        const filesWithUrls = data.filter(f => f.name !== '.emptyFolderPlaceholder').map(f => {
+           const { data: urlData } = supabase.storage.from('evidence').getPublicUrl(`work_orders/${resolvedParams.id}/${f.name}`);
+           return { name: f.name, url: urlData.publicUrl };
+        });
+        setAttachedFiles(filesWithUrls);
+      }
+    }
+
     fetchWorkOrder();
-  }, [params.id]);
+  }, [resolvedParams.id]);
 
   const handleUpdateStatus = async (newStatus: WorkOrderStatus) => {
     if (!workOrder) return;
@@ -92,6 +125,17 @@ export default function WorkOrderDetailPage({
         variant: "destructive",
       });
       return;
+    }
+
+    // Si se completa, registrar en ISO 9001
+    if (newStatus === 'Completado') {
+      await supabase.from("iso_logs").insert({
+        event_type: "Mantenimiento Completado",
+        description: `Se completó la OT de mantenimiento para el vehículo ${workOrder.vehicles?.license_plate}.`,
+        reference_id: workOrder.id,
+        reference_table: "work_orders",
+        clausula_iso: "8.5.1",
+      });
     }
 
     setWorkOrder({ ...workOrder, status: newStatus });
@@ -146,7 +190,7 @@ export default function WorkOrderDetailPage({
 
     const entry: ServiceLogEntry = {
       timestamp: new Date().toISOString(),
-      technician: "Ricardo Milos", // In a real app, this would come from the logged-in user
+      technician: currentUserName,
       entry: newLogEntry.trim(),
     };
 
@@ -188,20 +232,38 @@ export default function WorkOrderDetailPage({
     }
   };
 
-  const handleUploadFile = () => {
-    toast({
-      title: "Adjuntar Archivo (Simulación)",
-      description: "En una aplicación real, aquí se abriría un diálogo para subir un archivo.",
-    });
-    const newFileName = `Evidencia_${Date.now()}.jpg`;
-    setAttachedFiles([...attachedFiles, newFileName]);
+  const handleUploadFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !workOrder) return;
+
+    setIsUploading(true);
+    toast({ title: "Subiendo archivo...", description: "Por favor espere." });
+
+    const filePath = `work_orders/${workOrder.id}/${Date.now()}_${file.name}`;
+    const { error } = await supabase.storage.from('evidence').upload(filePath, file);
+
+    if (error) {
+      toast({ variant: "destructive", title: "Error", description: "No se pudo subir el archivo." });
+    } else {
+      const { data: urlData } = supabase.storage.from('evidence').getPublicUrl(filePath);
+      setAttachedFiles([...attachedFiles, { name: file.name, url: urlData.publicUrl }]);
+      
+      // Registrar subida como evidencia ISO 9001
+      await supabase.from("iso_logs").insert({
+        event_type: "Evidencia Subida",
+        description: `Se subió la evidencia ${file.name} para la OT ${workOrder.id}.`,
+        reference_id: workOrder.id,
+        reference_table: "work_orders",
+        clausula_iso: "7.5",
+      });
+
+      toast({ title: "Archivo Subido", description: "El archivo se ha adjuntado a la orden." });
+    }
+    setIsUploading(false);
   };
 
-  const handleDownloadFile = (fileName: string) => {
-    toast({
-      title: "Descarga Iniciada (Simulación)",
-      description: `Se está descargando el archivo: ${fileName}.`,
-    });
+  const handleDownloadFile = (url: string) => {
+    window.open(url, '_blank');
   };
 
   const client = workOrder?.clients;
@@ -524,21 +586,33 @@ export default function WorkOrderDetailPage({
                         <li key={index} className="flex items-center justify-between rounded-lg border p-3">
                             <div className="flex items-center gap-3">
                                 <FileText className="h-5 w-5 text-muted-foreground"/>
-                                <span className="font-medium">{file}</span>
+                                <span className="font-medium truncate max-w-[200px]">{file.name}</span>
                             </div>
-                            <Button variant="ghost" size="sm" onClick={() => handleDownloadFile(file)}>
+                            <Button variant="ghost" size="sm" onClick={() => handleDownloadFile(file.url)}>
                             <Download className="mr-2 h-4 w-4" />
-                            Descargar
+                            Ver / Descargar
                             </Button>
                         </li>
                         ))}
+                        {attachedFiles.length === 0 && (
+                          <li className="text-sm text-muted-foreground text-center py-4">No hay archivos adjuntos.</li>
+                        )}
                     </ul>
                     </CardContent>
                     <CardFooter>
-                    <Button variant="outline" onClick={handleUploadFile}>
-                        <Upload className="mr-2 h-4 w-4" />
-                        Adjuntar Nuevo Documento
-                    </Button>
+                    <div className="relative w-full">
+                        <Input 
+                           type="file" 
+                           id="file-upload" 
+                           className="hidden" 
+                           onChange={handleUploadFile}
+                           disabled={isUploading}
+                        />
+                        <Label htmlFor="file-upload" className="w-full flex items-center justify-center h-10 px-4 py-2 bg-transparent border border-input rounded-md hover:bg-accent hover:text-accent-foreground cursor-pointer">
+                            <Upload className="mr-2 h-4 w-4" />
+                            {isUploading ? "Subiendo..." : "Adjuntar Nuevo Documento"}
+                        </Label>
+                    </div>
                     </CardFooter>
                 </Card>
             </div>

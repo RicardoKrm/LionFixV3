@@ -107,43 +107,55 @@ export default function TechniciansPage() {
     setIsAlertOpen(true);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (selectedTechnician) {
-      setTechnicians(technicians.filter((t) => t.id !== selectedTechnician.id));
-      toast({
-        title: "Técnico Eliminado",
-        description: `El técnico ${selectedTechnician.name} ha sido eliminado.`,
-      });
+      // Delete technician_details first (if exists), then update role to remove mechanic access
+      await supabase.from('technician_details').delete().eq('user_id', selectedTechnician.id);
+      const { error } = await supabase
+        .from('profiles')
+        .update({ role: 'client' })
+        .eq('id', selectedTechnician.id);
+      if (!error) {
+        setTechnicians(technicians.filter((t) => t.id !== selectedTechnician.id));
+        toast({ title: "Técnico Eliminado", description: `${selectedTechnician.name} ha sido removido del equipo.` });
+      } else {
+        toast({ variant: "destructive", title: "Error", description: "No se pudo eliminar el técnico." });
+      }
     }
     setIsAlertOpen(false);
     setSelectedTechnician(null);
   };
 
-  const handleFormSubmit = (data: Omit<Technician, "id">) => {
+  const handleFormSubmit = async (data: Omit<Technician, "id">) => {
     if (selectedTechnician) {
-      // Edit
-      setTechnicians(technicians.map((t) =>
-        t.id === selectedTechnician.id ? { ...t, ...data } : t
-      ));
-      toast({
-        title: "Técnico Actualizado",
-        description: "Los datos del técnico han sido actualizados.",
-      });
+      // Edit: update profile name + upsert technician_details
+      await supabase.from('profiles').update({ name: data.name }).eq('id', selectedTechnician.id);
+      const { error } = await supabase.from('technician_details').upsert({
+        user_id: selectedTechnician.id,
+        specialties: data.specialties,
+        hire_date: data.hireDate,
+        extra_hours_this_month: data.extraHoursThisMonth,
+        max_extra_hours: data.maxExtraHours,
+      }, { onConflict: 'user_id' });
+      if (!error) {
+        setTechnicians(technicians.map((t) => t.id === selectedTechnician.id ? { ...t, ...data } : t));
+        toast({ title: "Técnico Actualizado", description: "Los datos han sido guardados en la base de datos." });
+      } else {
+        toast({ variant: "destructive", title: "Error", description: error.message });
+      }
     } else {
-      // Create
-      const newTechnician: Technician = {
-        id: `TECH-${(technicians.length + 1).toString().padStart(3, '0')}`,
-        ...data,
-      };
-      setTechnicians([...technicians, newTechnician]);
-       toast({
-        title: "Técnico Creado",
-        description: "El nuevo técnico ha sido añadido al equipo.",
+      // Create: a new technician must be a registered user with role 'mechanic'.
+      // This flow requires the user to already have an account. We update their role.
+      toast({
+        title: "Para añadir un técnico",
+        description: "El técnico debe registrarse primero en la app. Luego, en Supabase cambia su rol a 'mechanic' en la tabla profiles.",
+        variant: "default",
       });
     }
     setIsFormOpen(false);
     setSelectedTechnician(null);
   };
+
 
   return (
     <>

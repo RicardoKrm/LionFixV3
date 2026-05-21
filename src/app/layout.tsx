@@ -41,10 +41,14 @@ export const metadata: Metadata = {
     },
   },
   icons: {
-    icon: '/favicon.ico',
-    apple: '/apple-touch-icon.png', // Create and add this image
+    icon: [
+      { url: '/favicon.ico' },
+      { url: '/logo.jpeg', type: 'image/jpeg' },
+    ],
+    apple: '/logo.jpeg',
+    shortcut: '/logo.jpeg',
   },
-  manifest: '/site.webmanifest', // Create and add this file
+  manifest: '/site.webmanifest',
 };
 
 // JSON-LD Structured Data for Local SEO

@@ -51,43 +51,40 @@ export default function CalendarPage() {
     setIsFormOpen(true);
   };
 
-  const handleDeleteEvent = (eventId: string) => {
-     setEvents(events.filter(e => e.id !== eventId));
-     toast({
-        title: "Cita Eliminada",
-        description: "La cita ha sido eliminada del calendario.",
-        variant: "destructive"
-     });
-     setIsFormOpen(false);
-     setSelectedEvent(null);
-  }
-
-  const handleFormSubmit = (data: any) => {
-    if (selectedEvent) {
-        // Edit existing event
-        const updatedEvent = { ...selectedEvent, ...data };
-        setEvents(events.map(e => e.id === selectedEvent.id ? updatedEvent : e));
-        toast({
-            title: "Cita Actualizada",
-            description: `Se ha actualizado la cita para el vehículo ${data.vehicle}.`,
-        });
-
+  const handleDeleteEvent = async (eventId: string) => {
+    const { error } = await supabase.from('calendar_events').delete().eq('id', eventId);
+    if (!error) {
+      setEvents(events.filter(e => e.id !== eventId));
+      toast({ title: "Cita Eliminada", description: "La cita ha sido eliminada del calendario.", variant: "destructive" });
     } else {
-       // Create new event
-       const newEvent = {
-        id: `E${(events.length + 1).toString().padStart(3, '0')}`,
-        ...data,
-       };
-       setEvents([...events, newEvent]);
-       toast({
-           title: "Cita Creada",
-           description: `Se ha agendado la cita para el vehículo ${data.vehicle}.`,
-       });
+      toast({ variant: "destructive", title: "Error", description: "No se pudo eliminar la cita." });
     }
-
     setIsFormOpen(false);
     setSelectedEvent(null);
   };
+
+  const handleFormSubmit = async (data: any) => {
+    if (selectedEvent) {
+      const { error } = await supabase.from('calendar_events').update(data).eq('id', selectedEvent.id);
+      if (!error) {
+        setEvents(events.map(e => e.id === selectedEvent.id ? { ...e, ...data } : e));
+        toast({ title: "Cita Actualizada", description: `Cita para ${data.vehicle} actualizada.` });
+      } else {
+        toast({ variant: "destructive", title: "Error", description: error.message });
+      }
+    } else {
+      const { data: newEvent, error } = await supabase.from('calendar_events').insert(data).select().single();
+      if (!error && newEvent) {
+        setEvents([...events, newEvent]);
+        toast({ title: "Cita Creada", description: `Cita para ${data.vehicle} agendada exitosamente.` });
+      } else {
+        toast({ variant: "destructive", title: "Error", description: error?.message || "No se pudo crear la cita." });
+      }
+    }
+    setIsFormOpen(false);
+    setSelectedEvent(null);
+  };
+
 
   if (loading) {
     return (

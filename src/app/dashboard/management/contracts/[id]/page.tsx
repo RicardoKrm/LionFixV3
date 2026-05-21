@@ -30,7 +30,9 @@ import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
 
-export default function ContractDetailPage({ params }: { params: { id: string } }) {
+export default function ContractDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = React.use(params);
+  const router = useRouter();
   const { toast } = useToast();
   const [contract, setContract] = useState<any | null>(null);
   const [contractVehicles, setContractVehicles] = useState<any[]>([]);
@@ -44,7 +46,7 @@ export default function ContractDetailPage({ params }: { params: { id: string } 
       const { data: contractData, error: contractError } = await supabase
         .from("fleet_contracts")
         .select("*, clients(name, email, phone)")
-        .eq("id", params.id)
+        .eq("id", resolvedParams.id)
         .single();
 
       if (contractError || !contractData) {
@@ -66,7 +68,7 @@ export default function ContractDetailPage({ params }: { params: { id: string } 
     }
 
     fetchData();
-  }, [params.id]);
+  }, [resolvedParams.id]);
 
   const handleUpload = () => {
     toast({

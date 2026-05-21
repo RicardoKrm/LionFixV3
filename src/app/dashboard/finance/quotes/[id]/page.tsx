@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { DashboardHeader } from "@/components/dashboard-header";
@@ -32,8 +32,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 export default function QuoteDetailPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
+  const resolvedParams = React.use(params);
   const [quote, setQuote] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState<string>("Enviada");
@@ -48,7 +49,7 @@ export default function QuoteDetailPage({
         .select(
           "*, clients(name, email, phone), vehicles(make, model, license_plate, year)"
         )
-        .eq("id", params.id)
+        .eq("id", resolvedParams.id)
         .single();
 
       if (error || !data) {
@@ -61,7 +62,7 @@ export default function QuoteDetailPage({
       setLoading(false);
     }
     fetchQuote();
-  }, [params.id]);
+  }, [resolvedParams.id]);
 
   // --- Loading State ---
   if (loading) {
@@ -150,18 +151,43 @@ export default function QuoteDetailPage({
     }
   };
 
-  const handleSend = () => {
+  const handleSend = async () => {
+    // Mark quote as 'Enviada' in DB to track it was sent
+    await supabase.from('quotes').update({ status: 'Enviada' }).eq('id', quote.id);
+    setStatus('Enviada');
     toast({
-      title: "Cotización Enviada",
-      description: `La cotización ${quote.id} ha sido enviada a ${client?.email}.`,
+      title: "Cotización marcada como Enviada",
+      description: `El estado de la cotización fue actualizado. Contacta al cliente ${client?.email} para enviarla.`,
     });
   };
 
-  const handleConvertToOT = () => {
-    toast({
-      title: "Orden de Trabajo Creada (Simulación)",
-      description: `Se ha generado la OT-2024-005 a partir de la cotización ${quote.id}.`,
-    });
+  const handleConvertToOT = async () => {
+    // Create a real work order from this approved quote
+    const { data: newWo, error } = await supabase
+      .from('work_orders')
+      .insert({
+        client_id: quote.client_id,
+        vehicle_id: quote.vehicle_id,
+        service_description: quote.notes || `Servicio originado desde Cotización ${quote.id.slice(0,8).toUpperCase()}`,
+        type: 'Manténción Correctiva',
+        status: 'Recibido',
+        parts_used: quote.items || [],
+      })
+      .select()
+      .single();
+
+    if (!error && newWo) {
+      // Mark quote as converted
+      await supabase.from('quotes').update({ status: 'Convertida a OT' }).eq('id', quote.id);
+      setStatus('Convertida a OT');
+      toast({
+        title: "✅ Orden de Trabajo Creada",
+        description: `La OT fue creada exitosamente. ID: ${newWo.id.slice(0, 8).toUpperCase()}`,
+      });
+      router.push(`/dashboard/work-orders/${newWo.id}`);
+    } else {
+      toast({ variant: "destructive", title: "Error", description: error?.message || "No se pudo crear la OT." });
+    }
   };
 
   if (!client || !vehicle) {
@@ -293,8 +319,8 @@ export default function QuoteDetailPage({
                     <CardTitle>Opciones del Documento</CardTitle>
                 </CardHeader>
                  <CardContent className="flex flex-col gap-3">
-                    <Button variant="outline" onClick={handleSend}><Send className="mr-2 h-4 w-4"/> Enviar por Email</Button>
-                    <Button variant="outline"><Printer className="mr-2 h-4 w-4"/> Imprimir / PDF</Button>
+                    <Button variant="outline" onClick={handleSend}><Send className="mr-2 h-4 w-4"/> Marcar como Enviada</Button>
+                    <Button variant="outline" onClick={() => window.print()}><Printer className="mr-2 h-4 w-4"/> Imprimir / PDF</Button>
                  </CardContent>
              </Card>
         </div>

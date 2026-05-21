@@ -16,7 +16,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase";
 
-const TOTAL_WORKSTATIONS = 3;
+const TOTAL_WORKSTATIONS = 6;
 
 export default function DashboardPage() {
   const [activeWorkOrders, setActiveWorkOrders] = useState<any[]>([]);

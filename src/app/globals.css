@@ -55,7 +55,11 @@
   * {
     @apply border-border;
   }
-  body {
+html {
+  scroll-behavior: smooth;
+}
+
+body {
     @apply text-foreground font-body antialiased;
     background-color: hsl(var(--background));
     min-height: 100vh;

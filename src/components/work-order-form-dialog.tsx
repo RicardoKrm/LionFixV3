@@ -49,7 +49,7 @@ const workOrderSchema = z.object({
   vehicleId: z.string().min(1, "Debe seleccionar un vehículo."),
   service: z.string().min(3, "La descripción del servicio es requerida."),
   type: z.custom<WorkOrderType>(),
-  technician: z.string().min(1, "Debe seleccionar un técnico."),
+  technician: z.string().optional(),
   laborHours: z.coerce.number().min(0, "Las horas deben ser un número positivo."),
   status: z.custom<WorkOrderStatus>().optional(),
   parts: z.array(partItemSchema).optional(),
@@ -88,7 +88,7 @@ export function WorkOrderFormDialog({
         sku: p.sku, name: p.name, cost: p.cost, price: p.price, stock: p.stock,
       })));
     });
-    supabase.from("profiles").select("user_id, name").eq("role", "mechanic").then(({ data }) => {
+    supabase.from("profiles").select("id, name").eq("role", "mechanic").then(({ data }) => {
       if (data) setTechnicians(data);
     });
   }, []);
@@ -289,7 +289,7 @@ export function WorkOrderFormDialog({
                         </FormControl>
                         <SelectContent>
                           {technicians.map(tech => (
-                             <SelectItem key={tech.user_id} value={tech.name}>{tech.name}</SelectItem>
+                             <SelectItem key={tech.id} value={tech.id}>{tech.name}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
