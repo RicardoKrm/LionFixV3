@@ -54,17 +54,17 @@ const BASE_DELIVERY_ITEMS = [
   "Boleta / Factura emitida",
 ];
 
-type EvidenceCategory = "ingreso" | "trabajo" | "salida";
+type EvidenceCategory = "portada" | "entrada" | "salida";
 interface EvidencePhoto { url: string; name: string; category: EvidenceCategory; }
 
 const CATEGORY_LABELS: Record<EvidenceCategory, string> = {
-  ingreso: "Ingreso al Taller",
-  trabajo: "Trabajo Realizado",
-  salida: "Salida del Taller",
+  portada: "Foto Principal (Portada)",
+  entrada: "Evidencias de Entrada",
+  salida: "Evidencias de Salida",
 };
 const CATEGORY_COLORS: Record<EvidenceCategory, string> = {
-  ingreso: "text-blue-400 border-blue-500/40 bg-blue-500/10",
-  trabajo: "text-amber-400 border-amber-500/40 bg-amber-500/10",
+  portada: "text-blue-400 border-blue-500/40 bg-blue-500/10",
+  entrada: "text-amber-400 border-amber-500/40 bg-amber-500/10",
   salida: "text-green-400 border-green-500/40 bg-green-500/10",
 };
 
@@ -129,7 +129,7 @@ export default function ChecklistsPage() {
   // Step 3: Evidence + Notes
   const [evidencePhotos, setEvidencePhotos] = useState<EvidencePhoto[]>([]);
   const [uploadingCategory, setUploadingCategory] = useState<EvidenceCategory | null>(null);
-  const [activeUploadCategory, setActiveUploadCategory] = useState<EvidenceCategory>("ingreso");
+  const [activeUploadCategory, setActiveUploadCategory] = useState<EvidenceCategory>("portada");
   const [formNotes, setFormNotes] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -535,7 +535,7 @@ export default function ChecklistsPage() {
 
                     {/* Category tabs */}
                     <div className="flex gap-2 flex-wrap mb-4">
-                      {(["ingreso", "trabajo", "salida"] as EvidenceCategory[]).map(cat => (
+                      {(["portada", "entrada", "salida"] as EvidenceCategory[]).map(cat => (
                         <button
                           key={cat}
                           type="button"
@@ -574,7 +574,7 @@ export default function ChecklistsPage() {
 
                     {/* Photo grids per category */}
                     <div className="mt-4 space-y-4">
-                      {(["ingreso", "trabajo", "salida"] as EvidenceCategory[]).map(cat => {
+                      {(["portada", "entrada", "salida"] as EvidenceCategory[]).map(cat => {
                         const catPhotos = evidencePhotos.filter(p => p.category === cat);
                         if (catPhotos.length === 0) return null;
                         return (

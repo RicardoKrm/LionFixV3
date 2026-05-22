@@ -29,7 +29,7 @@ export type Part = {
   price: number; // Precio de venta al cliente
 };
 
-export type WorkOrderStatus = 'Recibido' | 'Esperando Aprobación' | 'En Reparación' | 'Esperando Repuestos' | 'Completado' | 'Entregado';
+export type WorkOrderStatus = 'Ingresado' | 'En Diagnóstico' | 'Esperando Aprobación' | 'Esperando Repuestos' | 'En Reparación' | 'Listo para Retiro' | 'Entregado' | 'Cancelado';
 export type WorkOrderType = 'Mantención Preventiva' | 'Mantención Correctiva';
 
 export type ServiceLogEntry = {
@@ -67,6 +67,7 @@ export type WorkOrder = {
 export type EnrichedWorkOrder = WorkOrder & {
   client: Client;
   vehicle: Vehicle;
+  coverImageUrl?: string;
 };
 
 export type QuoteStatus = 'Enviada' | 'Aprobada' | 'Rechazada';

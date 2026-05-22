@@ -36,19 +36,36 @@ export default function WorkOrdersPage() {
       .select(`
         *,
         clients(name),
-        vehicles(make, model, license_plate, year)
+        vehicles(make, model, license_plate, year),
+        checklists(evidence_photos)
       `)
       .order("entry_date", { ascending: false });
 
     if (!error && data) {
-      // Enriquecer con campos de compatibilidad
-      const enriched = data.map((wo: any) => ({
-        ...wo,
-        client: wo.clients || { name: "N/A" },
-        vehicle: wo.vehicles || { make: "", model: "", license_plate: "" },
-        entryDate: wo.entry_date,
-        service: wo.service_description || wo.service || "",
-      }));
+      const enriched = data.map((wo: any) => {
+        // Find the first checklist that has a "portada" evidence photo
+        let coverImageUrl = undefined;
+        if (wo.checklists && Array.isArray(wo.checklists)) {
+           for (const checklist of wo.checklists) {
+               if (checklist.evidence_photos && Array.isArray(checklist.evidence_photos)) {
+                   const portadaPhoto = checklist.evidence_photos.find((p: any) => p.category === "portada");
+                   if (portadaPhoto) {
+                       coverImageUrl = portadaPhoto.url;
+                       break;
+                   }
+               }
+           }
+        }
+
+        return {
+          ...wo,
+          client: wo.clients || { name: "N/A" },
+          vehicle: wo.vehicles || { make: "", model: "", license_plate: "" },
+          entryDate: wo.entry_date,
+          service: wo.service_description || wo.service || "",
+          coverImageUrl,
+        };
+      });
       setWorkOrders(enriched);
     } else {
       console.error("Error fetching work orders:", error);
@@ -61,8 +78,8 @@ export default function WorkOrdersPage() {
   };
   
   const filteredWorkOrders = useMemo(() => {
-    const activeStatuses: WorkOrderStatus[] = ['Recibido', 'Esperando Aprobación', 'En Reparación', 'Esperando Repuestos'];
-    const finishedStatuses: WorkOrderStatus[] = ['Completado', 'Entregado'];
+    const activeStatuses: WorkOrderStatus[] = ['Ingresado', 'En Diagnóstico', 'Esperando Aprobación', 'En Reparación', 'Esperando Repuestos'];
+    const finishedStatuses: WorkOrderStatus[] = ['Listo para Retiro', 'Entregado', 'Cancelado'];
 
     let filtered = workOrders;
 
@@ -94,7 +111,7 @@ export default function WorkOrdersPage() {
         type: data.type,
         technician_id: null,
         labor_hours: data.laborHours,
-        status: "Recibido",
+        status: "Ingresado",
         parts_used: data.parts || [],
       })
       .select(`*, clients(name), vehicles(make, model, license_plate, year)`)

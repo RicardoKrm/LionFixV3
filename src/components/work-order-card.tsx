@@ -39,9 +39,10 @@ export function WorkOrderCard({
     <Card className="flex flex-col group overflow-hidden transition-all duration-300 hover:shadow-xl hover:border-primary">
         <div className="relative aspect-[16/10] w-full overflow-hidden">
             <Image 
-                src={`https://placehold.co/600x400.png`}
+                src={workOrder.coverImageUrl || `https://placehold.co/600x400.png`}
                 alt={`${workOrder.vehicle.make} ${workOrder.vehicle.model}`}
                 fill
+                unoptimized
                 className="object-cover transition-transform duration-300 group-hover:scale-105"
                 data-ai-hint={`${workOrder.vehicle.make} ${workOrder.vehicle.model}`}
             />
@@ -62,11 +63,12 @@ export function WorkOrderCard({
                       </button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => onUpdateStatus(workOrder.id, 'Recibido')}>Recibido</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => onUpdateStatus(workOrder.id, 'Ingresado')}>Ingresado</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => onUpdateStatus(workOrder.id, 'En Diagnóstico')}>En Diagnóstico</DropdownMenuItem>
                       <DropdownMenuItem onClick={() => onUpdateStatus(workOrder.id, 'Esperando Aprobación')}>Esperando Aprobación</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => onUpdateStatus(workOrder.id, 'En Reparación')}>En Reparación</DropdownMenuItem>
                       <DropdownMenuItem onClick={() => onUpdateStatus(workOrder.id, 'Esperando Repuestos')}>Esperando Repuestos</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => onUpdateStatus(workOrder.id, 'Completado')}>Completado</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => onUpdateStatus(workOrder.id, 'En Reparación')}>En Reparación</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => onUpdateStatus(workOrder.id, 'Listo para Retiro')}>Listo para Retiro</DropdownMenuItem>
                       <DropdownMenuItem onClick={() => onUpdateStatus(workOrder.id, 'Entregado')}>Entregado</DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>

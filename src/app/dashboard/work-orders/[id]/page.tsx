@@ -41,6 +41,7 @@ import { Label } from "@/components/ui/label";
 import { ObdScannerTool } from "@/components/obd-scanner-tool";
 import { SatisfactionSurveyTool } from "@/components/satisfaction-survey-tool";
 import { WorkOrderStatusTracker } from "@/components/work-order-status-tracker";
+import { WorkOrderTimer } from "@/components/work-order-timer";
 import { Skeleton } from "@/components/ui/skeleton";
 import React from "react";
 
@@ -128,7 +129,7 @@ export default function WorkOrderDetailPage({
     }
 
     // Si se completa, registrar en ISO 9001
-    if (newStatus === 'Completado') {
+    if (newStatus === 'Listo para Retiro') {
       await supabase.from("iso_logs").insert({
         event_type: "Mantenimiento Completado",
         description: `Se completó la OT de mantenimiento para el vehículo ${workOrder.vehicles?.license_plate}.`,
@@ -156,7 +157,7 @@ export default function WorkOrderDetailPage({
       parts_used: data.parts ?? data.parts_used,
     };
 
-    if (data.status === 'Completado' || data.status === 'Entregado') {
+    if (data.status === 'Listo para Retiro' || data.status === 'Entregado') {
       updatePayload.completion_date = workOrder.completion_date || new Date().toISOString();
     }
 
@@ -364,11 +365,12 @@ export default function WorkOrderDetailPage({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => handleUpdateStatus('Recibido')}>Recibido</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleUpdateStatus('Ingresado')}>Ingresado</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleUpdateStatus('En Diagnóstico')}>En Diagnóstico</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => handleUpdateStatus('Esperando Aprobación')}>Esperando Aprobación</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleUpdateStatus('En Reparación')}>En Reparación</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => handleUpdateStatus('Esperando Repuestos')}>Esperando Repuestos</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleUpdateStatus('Completado')}>Completado</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleUpdateStatus('En Reparación')}>En Reparación</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleUpdateStatus('Listo para Retiro')}>Listo para Retiro</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => handleUpdateStatus('Entregado')}>Entregado</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -380,6 +382,8 @@ export default function WorkOrderDetailPage({
       </DashboardHeader>
       <main className="flex-1 p-6 space-y-6 overflow-y-auto">
         
+        <WorkOrderTimer workOrderId={workOrder.id} initialHours={workOrder.labor_hours || 0} />
+
         {/* --- Main Info & Status Tracker --- */}
         <Card className="overflow-hidden">
             <CardHeader className="bg-muted/50">

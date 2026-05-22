@@ -13,11 +13,12 @@ import {
 
 
 const statuses: { name: WorkOrderStatus; icon: React.ElementType }[] = [
-  { name: "Recibido", icon: Clock },
+  { name: "Ingresado", icon: Clock },
+  { name: "En Diagnóstico", icon: FileCheck },
   { name: "Esperando Aprobación", icon: FileCheck },
-  { name: "En Reparación", icon: Wrench },
   { name: "Esperando Repuestos", icon: Package },
-  { name: "Completado", icon: CheckCircle },
+  { name: "En Reparación", icon: Wrench },
+  { name: "Listo para Retiro", icon: CheckCircle },
   { name: "Entregado", icon: Car },
 ];
 
