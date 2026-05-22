@@ -74,6 +74,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const login = async (email: string, password: string) => {
+    console.log("0. Limpiando sesión anterior (previniendo cuelgue)...");
+    try {
+        await supabase.auth.signOut();
+    } catch(e) {}
+
     console.log("1. Intentando login en Supabase con:", email);
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     
