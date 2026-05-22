@@ -16,8 +16,16 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const { toast } = useToast();
   const router = useRouter();
-  const { login } = useAuth();
+  const { login, user, loading } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    if (user && !loading) {
+      if (user.role === 'admin') router.push('/dashboard');
+      else if (user.role === 'mechanic') router.push('/mechanic/dashboard');
+      else router.push('/portal/dashboard');
+    }
+  }, [user, loading, router]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,7 +36,7 @@ export default function LoginPage() {
         title: "Inicio de Sesión Exitoso",
         description: "Redirigiendo a tu panel...",
       });
-      // Redirection is handled in AuthProvider
+      // La redirección ocurre en el AuthProvider
     } catch (error) {
       toast({
         variant: "destructive",

@@ -105,6 +105,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             }
         } else {
             console.error("6. ERROR GRAVE: fetchProfile devolvió null. No se encontró el perfil en la tabla 'profiles'.");
+            throw new Error("Credenciales válidas, pero no se encontró un perfil asignado a este usuario.");
         }
     }
   };
