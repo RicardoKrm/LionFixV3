@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from "@/context/auth-context";
-import { SmoothScrollProvider } from "@/components/providers/SmoothScrollProvider";
 
 // SEO Metadata Optimized for Local Search (Iquique)
 export const metadata: Metadata = {
@@ -116,12 +115,10 @@ export default function RootLayout({
         />
       </head>
       <body className="font-body antialiased">
-        <SmoothScrollProvider>
-          <AuthProvider>
-            {children}
-            <Toaster />
-          </AuthProvider>
-        </SmoothScrollProvider>
+        <AuthProvider>
+          {children}
+          <Toaster />
+        </AuthProvider>
       </body>
     </html>
   );

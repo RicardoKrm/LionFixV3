@@ -57,6 +57,29 @@
   }
 html {
   scroll-behavior: smooth;
+  scrollbar-width: thin; /* Firefox */
+  scrollbar-color: hsl(45 93% 47%) hsl(0 0% 10%); /* Firefox: thumb track */
+}
+
+/* Custom Webkit Scrollbar (Chrome, Safari, Edge) */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(0 0% 10%);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(45 93% 47%); /* LionFix Gold */
+  border-radius: 8px;
+  border: 2px solid hsl(0 0% 10%); /* Padding visual */
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(45 93% 40%); /* Dorado más oscuro en hover */
 }
 
 body {

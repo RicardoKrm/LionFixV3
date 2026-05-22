@@ -4,9 +4,11 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ShieldCheck, Wrench, Cpu, Users, BadgeCheck, MapPin, Phone, Mail, ArrowRight } from "lucide-react";
 import Image from "next/image";
-import { useRef } from "react";
+import { useRef, useEffect } from "react";
 import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
 import { HeroCanvas } from "@/components/sections/HeroCanvas";
+import { ScrollLinkedEngine } from "@/components/sections/ScrollLinkedEngine";
+import Lenis from "lenis";
 
 // Custom icons for heavy vehicles
 const TruckIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -49,6 +51,26 @@ function AnimatedSection({ children, className }: { children: React.ReactNode, c
 }
 
 export default function LandingPage() {
+  useEffect(() => {
+    // Inicializamos Lenis SÓLO para la Landing Page
+    const lenis = new Lenis({
+      lerp: 0.1, // Suavidad
+      syncTouch: false,
+      smoothWheel: true,
+    });
+
+    function raf(time: number) {
+      lenis.raf(time);
+      requestAnimationFrame(raf);
+    }
+    requestAnimationFrame(raf);
+
+    return () => {
+      // Importante: al ir al dashboard se destruye y el scroll vuelve a ser normal
+      lenis.destroy();
+    };
+  }, []);
+
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground overflow-x-clip">
       {/* Premium Glassmorphic Header */}
@@ -77,108 +99,59 @@ export default function LandingPage() {
         {/* 3D Canvas Frame Sequence Engine */}
         <HeroCanvas />
 
-        {/* Bento Grid Services Section */}
-        <section id="services" className="py-32 bg-background relative z-10 px-4 md:px-8 max-w-[1400px] mx-auto">
-          <AnimatedSection className="text-center mb-20">
-            <h2 className="text-4xl md:text-5xl font-headline font-bold text-white tracking-tight">Precisión Neumática. <br/>Ingeniería de Clase Mundial.</h2>
-            <p className="mt-4 text-xl text-muted-foreground max-w-2xl mx-auto font-light">
-              Desde diagnóstico por computadora hasta reparaciones profundas de motores diésel.
-            </p>
-          </AnimatedSection>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 auto-rows-[320px]">
-            {/* Bento Box 1 - Large */}
-            <AnimatedSection className="md:col-span-2 bg-card border border-white/5 rounded-[32px] p-10 flex flex-col justify-between relative overflow-hidden group hover:border-primary/50 transition-colors shadow-2xl">
-              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-              <div className="relative z-10">
-                <div className="h-16 w-16 rounded-2xl bg-primary/20 flex items-center justify-center text-primary mb-6">
-                  <SprinterIcon className="h-8 w-8" />
-                </div>
-                <h3 className="text-3xl font-headline font-bold text-white mb-3">Especialistas MB Sprinter</h3>
-                <p className="text-muted-foreground text-lg max-w-md">
-                  Conocemos cada milímetro de tu Sprinter. Utilizamos software oficial y repuestos certificados para garantizar su durabilidad.
-                </p>
-              </div>
-            </AnimatedSection>
+        {/* 2. Por qué elegir LionFix (with video2.mp4 background) */}
+        <section id="about" className="relative py-32 overflow-hidden border-y border-white/5">
+           {/* Background Video */}
+           <video 
+              src="/videos/video2.mp4" 
+              autoPlay
+              loop
+              muted
+              playsInline
+              className="absolute inset-0 w-full h-full object-cover opacity-40 mix-blend-screen"
+           />
+           {/* Dark Gradient Overlay */}
+           <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-background/20 pointer-events-none" />
 
-            {/* Bento Box 2 */}
-            <AnimatedSection className="bg-card border border-white/5 rounded-[32px] p-10 flex flex-col justify-between relative overflow-hidden group hover:border-white/20 transition-colors shadow-xl">
-               <div className="relative z-10">
-                <div className="h-16 w-16 rounded-2xl bg-white/5 flex items-center justify-center text-white mb-6">
-                  <Cpu className="h-8 w-8" />
-                </div>
-                <h3 className="text-2xl font-headline font-bold text-white mb-3">Scanner Avanzado</h3>
-                <p className="text-muted-foreground text-lg">
-                  Detección electrónica de fallas con precisión milimétrica.
-                </p>
-              </div>
-            </AnimatedSection>
-
-            {/* Bento Box 3 */}
-            <AnimatedSection className="bg-card border border-white/5 rounded-[32px] p-10 flex flex-col justify-between relative overflow-hidden group hover:border-white/20 transition-colors shadow-xl">
-               <div className="relative z-10">
-                <div className="h-16 w-16 rounded-2xl bg-white/5 flex items-center justify-center text-white mb-6">
-                  <Wrench className="h-8 w-8" />
-                </div>
-                <h3 className="text-2xl font-headline font-bold text-white mb-3">Motores Diesel</h3>
-                <p className="text-muted-foreground text-lg">
-                  Expertos en sistemas Common Rail y ajuste de motores pesados.
-                </p>
-              </div>
-            </AnimatedSection>
-
-            {/* Bento Box 4 - Large Horizontal */}
-            <AnimatedSection className="md:col-span-2 bg-gradient-to-r from-card to-background border border-white/5 rounded-[32px] p-10 flex flex-col justify-center relative overflow-hidden group hover:border-primary/30 transition-colors shadow-xl">
-               <div className="relative z-10 flex flex-col md:flex-row items-center gap-8">
-                <div className="h-20 w-20 shrink-0 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
-                  <TruckIcon className="h-10 w-10" />
-                </div>
-                <div>
-                    <h3 className="text-3xl font-headline font-bold text-white mb-3">Mantenimiento de Flotas Completas</h3>
-                    <p className="text-muted-foreground text-lg">
-                    No importa si tienes 1 o 50 vehículos. Creamos planes preventivos para que tu negocio en Iquique no se detenga jamás.
-                    </p>
-                </div>
-              </div>
-            </AnimatedSection>
-          </div>
-        </section>
-        
-        {/* Feature Highlights with 3D Float Effect */}
-        <section id="about" className="py-32 bg-card/30 border-y border-white/5 relative overflow-hidden">
-             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-primary/5 rounded-full blur-[120px] pointer-events-none"></div>
-             
-             <div className="container mx-auto px-4 max-w-6xl relative z-10">
+           <div className="container mx-auto px-4 max-w-6xl relative z-10">
                  <AnimatedSection className="text-center mb-20">
-                  <h2 className="text-4xl md:text-5xl font-headline font-bold text-white">Por qué elegir LionFix</h2>
+                  <h2 className="text-4xl md:text-5xl font-headline font-bold text-white drop-shadow-xl">Por qué elegir LionFix</h2>
+                  <p className="mt-4 text-xl text-white/80 max-w-2xl mx-auto font-light drop-shadow-lg">
+                    Ingeniería de clase mundial y compromiso absoluto con la operatividad de tu negocio.
+                  </p>
                 </AnimatedSection>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-12 text-center">
                     <AnimatedSection className="group">
-                        <div className="mx-auto w-24 h-24 mb-8 bg-background border border-white/10 rounded-[2rem] flex items-center justify-center shadow-2xl transform transition-transform group-hover:scale-110 group-hover:-translate-y-2 duration-500">
-                            <Users className="h-10 w-10 text-primary" />
+                        <div className="mx-auto w-24 h-24 mb-8 bg-background/50 backdrop-blur-md border border-white/10 rounded-[2rem] flex items-center justify-center shadow-2xl transform transition-transform group-hover:scale-110 group-hover:-translate-y-2 duration-500">
+                            <Users className="h-10 w-10 text-primary drop-shadow-[0_0_10px_rgba(220,38,38,0.5)]" />
                         </div>
-                        <h3 className="text-2xl font-headline font-bold text-white mb-4">Técnicos de Élite</h3>
-                        <p className="text-muted-foreground text-lg">Personal rigurosamente capacitado en tecnologías europeas.</p>
+                        <h3 className="text-2xl font-headline font-bold text-white mb-4 drop-shadow-md">Técnicos de Élite</h3>
+                        <p className="text-white/80 text-lg font-medium drop-shadow-md">Personal rigurosamente capacitado en tecnologías europeas.</p>
                     </AnimatedSection>
                     
                     <AnimatedSection className="group">
-                        <div className="mx-auto w-24 h-24 mb-8 bg-background border border-white/10 rounded-[2rem] flex items-center justify-center shadow-2xl transform transition-transform group-hover:scale-110 group-hover:-translate-y-2 duration-500 delay-100">
-                            <BadgeCheck className="h-10 w-10 text-primary" />
+                        <div className="mx-auto w-24 h-24 mb-8 bg-background/50 backdrop-blur-md border border-white/10 rounded-[2rem] flex items-center justify-center shadow-2xl transform transition-transform group-hover:scale-110 group-hover:-translate-y-2 duration-500 delay-100">
+                            <BadgeCheck className="h-10 w-10 text-primary drop-shadow-[0_0_10px_rgba(220,38,38,0.5)]" />
                         </div>
-                        <h3 className="text-2xl font-headline font-bold text-white mb-4">Repuestos Premium</h3>
-                        <p className="text-muted-foreground text-lg">Alianzas con proveedores de piezas originales y alternativas de alta gama.</p>
+                        <h3 className="text-2xl font-headline font-bold text-white mb-4 drop-shadow-md">Repuestos Premium</h3>
+                        <p className="text-white/80 text-lg font-medium drop-shadow-md">Alianzas con proveedores de piezas originales y alternativas de alta gama.</p>
                     </AnimatedSection>
 
                     <AnimatedSection className="group">
-                        <div className="mx-auto w-24 h-24 mb-8 bg-background border border-white/10 rounded-[2rem] flex items-center justify-center shadow-2xl transform transition-transform group-hover:scale-110 group-hover:-translate-y-2 duration-500 delay-200">
-                            <ShieldCheck className="h-10 w-10 text-primary" />
+                        <div className="mx-auto w-24 h-24 mb-8 bg-background/50 backdrop-blur-md border border-white/10 rounded-[2rem] flex items-center justify-center shadow-2xl transform transition-transform group-hover:scale-110 group-hover:-translate-y-2 duration-500 delay-200">
+                            <ShieldCheck className="h-10 w-10 text-primary drop-shadow-[0_0_10px_rgba(220,38,38,0.5)]" />
                         </div>
-                        <h3 className="text-2xl font-headline font-bold text-white mb-4">Garantía Total</h3>
-                        <p className="text-muted-foreground text-lg">Transparencia absoluta en cada diagnóstico y reparación realizada.</p>
+                        <h3 className="text-2xl font-headline font-bold text-white mb-4 drop-shadow-md">Garantía Total</h3>
+                        <p className="text-white/80 text-lg font-medium drop-shadow-md">Transparencia absoluta en cada diagnóstico y reparación realizada.</p>
                     </AnimatedSection>
                 </div>
             </div>
         </section>
+
+        {/* 3. Interactive Scroll-Linked Engine Section (Services) */}
+        <div id="services">
+          <ScrollLinkedEngine />
+        </div>
 
       </main>
 
