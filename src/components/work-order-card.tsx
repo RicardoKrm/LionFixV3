@@ -19,7 +19,21 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 
-export function WorkOrderCard({ workOrder }: { workOrder: EnrichedWorkOrder }) {
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import type { WorkOrderStatus } from "@/types";
+
+export function WorkOrderCard({ 
+  workOrder, 
+  onUpdateStatus 
+}: { 
+  workOrder: EnrichedWorkOrder,
+  onUpdateStatus?: (id: string, status: WorkOrderStatus) => void 
+}) {
 
   return (
     <Card className="flex flex-col group overflow-hidden transition-all duration-300 hover:shadow-xl hover:border-primary">
@@ -40,7 +54,25 @@ export function WorkOrderCard({ workOrder }: { workOrder: EnrichedWorkOrder }) {
                         {workOrder.client.name} / <span className="font-mono">{workOrder.vehicle.licensePlate}</span>
                     </CardDescription>
                 </div>
-                <Badge variant={getStatusVariant(workOrder.status)} className="flex-shrink-0">{workOrder.status}</Badge>
+                {onUpdateStatus ? (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button className="flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity focus:outline-none">
+                        <Badge variant={getStatusVariant(workOrder.status)}>{workOrder.status}</Badge>
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => onUpdateStatus(workOrder.id, 'Recibido')}>Recibido</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => onUpdateStatus(workOrder.id, 'Esperando Aprobación')}>Esperando Aprobación</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => onUpdateStatus(workOrder.id, 'En Reparación')}>En Reparación</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => onUpdateStatus(workOrder.id, 'Esperando Repuestos')}>Esperando Repuestos</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => onUpdateStatus(workOrder.id, 'Completado')}>Completado</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => onUpdateStatus(workOrder.id, 'Entregado')}>Entregado</DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                ) : (
+                  <Badge variant={getStatusVariant(workOrder.status)} className="flex-shrink-0">{workOrder.status}</Badge>
+                )}
             </div>
             
             <div className="flex items-start gap-3 pt-4 flex-grow">

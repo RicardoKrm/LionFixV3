@@ -123,6 +123,31 @@ export default function WorkOrdersPage() {
     setIsFormOpen(false);
   };
 
+  const handleUpdateStatus = async (id: string, newStatus: WorkOrderStatus) => {
+    const { error } = await supabase
+      .from('work_orders')
+      .update({ status: newStatus })
+      .eq('id', id);
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar el estado.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setWorkOrders(workOrders.map(wo => 
+      wo.id === id ? { ...wo, status: newStatus } : wo
+    ));
+    
+    toast({
+      title: "Estado Actualizado",
+      description: `Orden movida a: ${newStatus}`,
+    });
+  };
+
   if (loading) {
     return (
       <div className="flex flex-col h-[calc(100vh-57px)]">
@@ -170,7 +195,7 @@ export default function WorkOrdersPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {filteredWorkOrders.map((wo) => (
-            <WorkOrderCard key={wo.id} workOrder={wo} />
+            <WorkOrderCard key={wo.id} workOrder={wo} onUpdateStatus={handleUpdateStatus} />
           ))}
         </div>
         {filteredWorkOrders.length === 0 && (
