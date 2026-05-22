@@ -182,20 +182,20 @@ export default function WorkOrdersPage() {
     <div className="flex flex-col h-[calc(100vh-57px)]">
       <DashboardHeader title="Órdenes de Trabajo">
         <div className="flex items-center gap-2">
-            <div className="w-64">
+            <div className="w-32 sm:w-48 md:w-64">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input 
-                  placeholder="Buscar por cliente, patente..."
+                  placeholder="Buscar..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-9"
+                  className="pl-9 h-9"
                 />
               </div>
             </div>
-            <Button onClick={handleNewOrder} variant="default">
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Nueva Orden
+            <Button onClick={handleNewOrder} variant="default" size="sm" className="h-9">
+            <PlusCircle className="mr-0 md:mr-2 h-4 w-4 shrink-0" />
+            <span className="hidden md:inline">Nueva Orden</span>
             </Button>
         </div>
       </DashboardHeader>

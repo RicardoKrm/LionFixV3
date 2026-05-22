@@ -325,15 +325,17 @@ export default function PizarraProgramacion() {
 
     return (
       <div className="flex-1 flex flex-col min-h-0 bg-background overflow-hidden">
-        <div className="grid grid-cols-7 border-b border-border">
-           {weekDaysInfo.map(d => (
-             <div key={d} className="py-2 text-center text-[10px] font-bold text-muted-foreground border-r border-border last:border-r-0 uppercase">
-               {d}
-             </div>
-           ))}
-        </div>
-        <div className="flex-1 grid grid-cols-7 grid-rows-6 auto-rows-[1fr] overflow-hidden">
-           {days.map((d, idx) => (
+        <div className="flex-1 overflow-y-auto overflow-x-auto custom-scrollbar">
+          <div className="min-w-[700px] h-full flex flex-col min-h-full">
+            <div className="grid grid-cols-7 border-b border-border shrink-0">
+               {weekDaysInfo.map(d => (
+                 <div key={d} className="py-2 text-center text-[10px] font-bold text-muted-foreground border-r border-border last:border-r-0 uppercase">
+                   {d}
+                 </div>
+               ))}
+            </div>
+            <div className="flex-1 grid grid-cols-7 grid-rows-6 auto-rows-[1fr] overflow-hidden">
+               {days.map((d, idx) => (
              <div key={idx} 
                onClick={d.isCurrentMonth ? () => {
                  setCurrentDate(d.date);
@@ -387,6 +389,8 @@ export default function PizarraProgramacion() {
                </div>
              </div>
            ))}
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -563,9 +567,9 @@ export default function PizarraProgramacion() {
     <div className="flex flex-col h-[calc(100vh-57px)] font-sans text-foreground bg-background">
       <DashboardHeader title="Calendario Digital del Taller" />
       
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
         {/* Left Sidebar */}
-        <div className="w-64 border-r border-border bg-card flex flex-col shrink-0 overflow-y-auto custom-scrollbar">
+        <div className="w-full md:w-64 border-b md:border-b-0 md:border-r border-border bg-card flex flex-col shrink-0 overflow-y-auto custom-scrollbar max-h-[35vh] md:max-h-none">
            
            <div className="p-4 space-y-6">
               
