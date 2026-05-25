@@ -110,6 +110,8 @@ export default function ChecklistsPage() {
   const [checklists, setChecklists] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [workOrders, setWorkOrders] = useState<any[]>([]);
+  const [clients, setClients] = useState<any[]>([]);
+  const [allVehicles, setAllVehicles] = useState<any[]>([]);
 
   // Sheet + wizard state
   const [isOpen, setIsOpen] = useState(false);
@@ -119,6 +121,8 @@ export default function ChecklistsPage() {
 
   // Step 1: Config
   const [formType, setFormType] = useState<"Recepción" | "Entrega">("Recepción");
+  const [formClientId, setFormClientId] = useState("");
+  const [formVehicleId, setFormVehicleId] = useState("");
   const [formWorkOrderId, setFormWorkOrderId] = useState("");
 
   // Step 2: Items
@@ -157,10 +161,23 @@ export default function ChecklistsPage() {
     if (data) setWorkOrders(data);
   }
 
+  useEffect(() => {
+    supabase.from("clients").select("id, name").order("name").then(({ data }) => {
+      if (data) setClients(data);
+    });
+    supabase.from("vehicles").select("id, make, model, license_plate, client_id").then(({ data }) => {
+      if (data) setAllVehicles(data);
+    });
+  }, []);
+
+  const clientVehicles = allVehicles.filter(v => v.client_id === formClientId);
+
   function openNew() {
     setSelectedChecklist(null);
     setStep(1);
     setFormType("Recepción");
+    setFormClientId("");
+    setFormVehicleId("");
     setFormWorkOrderId("");
     setCustomItems([...BASE_RECEPTION_ITEMS]);
     setFormCheckedItems({});
@@ -173,6 +190,18 @@ export default function ChecklistsPage() {
     setSelectedChecklist(checklist);
     setStep(1);
     setFormType(checklist.type);
+    
+    // Find client ID based on vehicle ID
+    if (checklist.vehicle_id) {
+        const vehicle = allVehicles.find(v => v.id === checklist.vehicle_id);
+        if (vehicle) {
+             setFormClientId(vehicle.client_id);
+        }
+    } else {
+         setFormClientId("");
+    }
+    
+    setFormVehicleId(checklist.vehicle_id || "");
     setFormWorkOrderId(checklist.work_order_id || "");
     const saved = checklist.custom_items as string[] | null;
     const base = checklist.type === "Recepción" ? BASE_RECEPTION_ITEMS : BASE_DELIVERY_ITEMS;
@@ -190,7 +219,7 @@ export default function ChecklistsPage() {
   }
 
   function canGoNext() {
-    if (step === 1) return !!formWorkOrderId;
+    if (step === 1) return !!formVehicleId;
     if (step === 2) return customItems.length > 0;
     return true;
   }
@@ -235,15 +264,15 @@ export default function ChecklistsPage() {
 
   async function handleSave() {
     setIsSubmitting(true);
-    const wo = workOrders.find(w => w.id === formWorkOrderId);
+    const vehicle = allVehicles.find(v => v.id === formVehicleId);
     const allChecked = Object.values(formCheckedItems).filter(Boolean).length;
     const isCompleted = allChecked === customItems.length && customItems.length > 0;
 
     const payload = {
       type: formType,
-      work_order_id: formWorkOrderId,
-      vehicle_id: wo?.vehicle_id || null,
-      vehicle_plate: wo?.vehicles?.license_plate || null,
+      work_order_id: formWorkOrderId || null,
+      vehicle_id: vehicle?.id || null,
+      vehicle_plate: vehicle?.license_plate || null,
       checked_items: formCheckedItems,
       custom_items: customItems,
       evidence_photos: evidencePhotos,
@@ -343,7 +372,7 @@ export default function ChecklistsPage() {
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="flex-grow space-y-3">
-                    <div className="text-xs text-muted-foreground">OT: <span className="font-medium">{cl.work_orders?.ot_number || "N/A"}</span></div>
+                    <div className="text-xs text-muted-foreground">OT: <span className="font-medium">{cl.work_orders?.ot_number || "Pendiente"}</span></div>
                     <div>
                       <div className="flex justify-between text-xs mb-1">
                         <span className="text-muted-foreground">Progreso</span>
@@ -359,8 +388,17 @@ export default function ChecklistsPage() {
                     {cl.notes && <p className="text-xs text-muted-foreground italic line-clamp-2">"{cl.notes}"</p>}
                     <p className="text-xs text-muted-foreground">{new Date(cl.created_at).toLocaleString("es-CL")}</p>
                   </CardContent>
-                  <CardFooter>
+                  <CardFooter className="flex flex-col gap-2">
                     <Button variant="outline" className="w-full" onClick={() => openEdit(cl)}>Ver / Editar</Button>
+                    {!cl.work_orders?.ot_number && cl.type === "Recepción" && (
+                        <Button 
+                           variant="secondary" 
+                           className="w-full" 
+                           onClick={() => window.location.href = `/dashboard/work-orders?createFromChecklist=${cl.id}&vehicleId=${cl.vehicle_id}`}
+                        >
+                           <Wrench className="mr-2 h-4 w-4" /> Generar OT
+                        </Button>
+                    )}
                   </CardFooter>
                 </Card>
               );
@@ -426,30 +464,40 @@ export default function ChecklistsPage() {
                   <Separator />
 
                   <div>
-                    <h3 className="text-base font-semibold mb-1">Orden de Trabajo</h3>
-                    <p className="text-sm text-muted-foreground mb-3">Vincula este checklist a una OT activa.</p>
-                    <Select value={formWorkOrderId} onValueChange={setFormWorkOrderId}>
-                      <SelectTrigger className="w-full h-12">
-                        <SelectValue placeholder="Seleccionar OT activa..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {workOrders.map(wo => (
-                          <SelectItem key={wo.id} value={wo.id}>
-                            <div className="flex flex-col">
-                              <span className="font-medium">{wo.ot_number || wo.id.slice(0, 8)}</span>
-                              <span className="text-xs text-muted-foreground">
-                                {wo.vehicles?.license_plate} — {wo.vehicles?.make} {wo.vehicles?.model}
-                              </span>
-                            </div>
-                          </SelectItem>
-                        ))}
-                        {workOrders.length === 0 && (
-                          <SelectItem value="__none__" disabled>No hay OTs activas</SelectItem>
-                        )}
-                      </SelectContent>
-                    </Select>
-                    {!formWorkOrderId && (
-                      <p className="text-xs text-amber-400 mt-2">⚠ Debes seleccionar una OT para continuar.</p>
+                    <h3 className="text-base font-semibold mb-1">Vehículo del Cliente</h3>
+                    <p className="text-sm text-muted-foreground mb-3">Selecciona el cliente y el vehículo para este checklist.</p>
+                    <div className="space-y-3">
+                        <Select value={formClientId} onValueChange={(val) => { setFormClientId(val); setFormVehicleId(""); }}>
+                        <SelectTrigger className="w-full h-12">
+                            <SelectValue placeholder="Seleccionar cliente..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {clients.map(c => (
+                            <SelectItem key={c.id} value={c.id}>
+                                {c.name}
+                            </SelectItem>
+                            ))}
+                        </SelectContent>
+                        </Select>
+
+                        <Select value={formVehicleId} onValueChange={setFormVehicleId} disabled={!formClientId}>
+                        <SelectTrigger className="w-full h-12">
+                            <SelectValue placeholder="Seleccionar vehículo..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {clientVehicles.map(v => (
+                            <SelectItem key={v.id} value={v.id}>
+                                {v.make} {v.model} ({v.license_plate})
+                            </SelectItem>
+                            ))}
+                            {clientVehicles.length === 0 && (
+                            <SelectItem value="__none__" disabled>Este cliente no tiene vehículos</SelectItem>
+                            )}
+                        </SelectContent>
+                        </Select>
+                    </div>
+                    {!formVehicleId && (
+                      <p className="text-xs text-amber-400 mt-2">⚠ Debes seleccionar un vehículo para continuar.</p>
                     )}
                   </div>
                 </div>

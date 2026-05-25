@@ -62,12 +62,12 @@ export default function LoginPage() {
             className="w-12 h-auto drop-shadow-[0_0_12px_rgba(202,162,0,0.5)]"
             priority
           />
-          <span className="text-xl font-bold tracking-tight text-white hidden sm:block">LionFix</span>
+          <span className="text-xl font-bold tracking-tight text-white hidden sm:block">LionFix Service</span>
         </div>
 
         <div className="mt-12 lg:mt-0 w-full max-w-[420px] mx-auto">
           <h1 className="text-3xl lg:text-4xl font-bold text-white mb-3">
-            Bienvenido a LionFix
+            Bienvenido a LionFix Service
           </h1>
           <p className="text-muted-foreground text-base mb-8">
             Ingresa a tu portal de cliente para hacer seguimiento de tu vehículo en tiempo real.

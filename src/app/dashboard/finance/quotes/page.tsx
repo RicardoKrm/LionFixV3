@@ -76,6 +76,13 @@ export default function QuotesPage() {
         title: "Cotización Creada",
         description: `Se ha creado la cotización exitosamente.`,
       });
+      
+      const clientPhone = newQuote.clients?.phone;
+      if (clientPhone) {
+        const message = encodeURIComponent(`Hola ${newQuote.clients?.name}, te enviamos la cotización #${newQuote.id.slice(0, 8).toUpperCase()} por un total de $${newQuote.total.toLocaleString("es-CL")}. Puedes revisarla en tu portal.`);
+        const waUrl = `https://wa.me/${clientPhone.replace(/\+/g, '')}?text=${message}`;
+        window.open(waUrl, '_blank');
+      }
     } else {
       toast({
         variant: "destructive",

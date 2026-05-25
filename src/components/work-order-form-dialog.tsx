@@ -63,6 +63,7 @@ type WorkOrderFormDialogProps = {
   onOpenChange: (open: boolean) => void;
   onSubmit: (data: Omit<WorkOrder, "id" | "date" | "entryDate" | "serviceLog">) => void;
   workOrder?: WorkOrder | null;
+  prefillVehicleId?: string;
 };
 
 export function WorkOrderFormDialog({
@@ -70,6 +71,7 @@ export function WorkOrderFormDialog({
   onOpenChange,
   onSubmit,
   workOrder,
+  prefillVehicleId,
 }: WorkOrderFormDialogProps) {
   const [clients, setClients] = useState<any[]>([]);
   const [allVehicles, setAllVehicles] = useState<any[]>([]);
@@ -142,10 +144,20 @@ export function WorkOrderFormDialog({
   }, [workOrder, form, isOpen]);
 
   useEffect(() => {
-      if(!workOrder) {
+     if (isOpen && prefillVehicleId && allVehicles.length > 0 && !workOrder) {
+         const vehicle = allVehicles.find(v => v.id === prefillVehicleId);
+         if (vehicle) {
+             form.setValue('clientId', vehicle.client_id);
+             form.setValue('vehicleId', prefillVehicleId);
+         }
+     }
+  }, [isOpen, prefillVehicleId, allVehicles, form, workOrder]);
+
+  useEffect(() => {
+      if(!workOrder && !prefillVehicleId) {
          form.setValue('vehicleId', '');
       }
-  }, [selectedClientId, form, workOrder]);
+  }, [selectedClientId, form, workOrder, prefillVehicleId]);
 
   const handleFormSubmit = (data: WorkOrderFormData) => {
     const finalData = {

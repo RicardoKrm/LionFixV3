@@ -1,7 +1,8 @@
 
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { DashboardHeader } from "@/components/dashboard-header";
 import { WorkOrderCard } from "@/components/work-order-card";
 import { Button } from "@/components/ui/button";
@@ -17,17 +18,28 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/lib/supabase";
 
 
-export default function WorkOrdersPage() {
+function WorkOrdersContent() {
   const [workOrders, setWorkOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<"activas" | "finalizadas" | "todas">("activas");
   const [searchTerm, setSearchTerm] = useState("");
+  const [prefillVehicleId, setPrefillVehicleId] = useState<string | undefined>();
+  const [checklistToUpdate, setChecklistToUpdate] = useState<string | undefined>();
   const { toast } = useToast();
+  
+  const searchParams = useSearchParams();
 
   useEffect(() => {
     fetchWorkOrders();
-  }, []);
+    const createFromChecklist = searchParams?.get('createFromChecklist');
+    const vehicleId = searchParams?.get('vehicleId');
+    if (createFromChecklist && vehicleId) {
+        setPrefillVehicleId(vehicleId);
+        setChecklistToUpdate(createFromChecklist);
+        setIsFormOpen(true);
+    }
+  }, [searchParams]);
 
   async function fetchWorkOrders() {
     setLoading(true);
@@ -130,6 +142,13 @@ export default function WorkOrdersPage() {
         title: "Orden de Trabajo Creada",
         description: "La nueva orden ha sido registrada en la base de datos.",
       });
+
+      // Update checklist if created from it
+      if (checklistToUpdate) {
+         await supabase.from('checklists').update({ work_order_id: newWo.id }).eq('id', checklistToUpdate);
+         setChecklistToUpdate(undefined);
+      }
+
     } else {
       toast({
         variant: "destructive",
@@ -138,6 +157,7 @@ export default function WorkOrdersPage() {
       });
     }
     setIsFormOpen(false);
+    setPrefillVehicleId(undefined);
   };
 
   const handleUpdateStatus = async (id: string, newStatus: WorkOrderStatus) => {
@@ -228,10 +248,19 @@ export default function WorkOrdersPage() {
       </main>
       <WorkOrderFormDialog
         isOpen={isFormOpen}
-        onOpenChange={setIsFormOpen}
+        onOpenChange={(open) => { setIsFormOpen(open); if(!open) setPrefillVehicleId(undefined); }}
         onSubmit={handleFormSubmit}
         workOrder={null}
+        prefillVehicleId={prefillVehicleId}
       />
     </div>
   );
+}
+
+export default function WorkOrdersPage() {
+    return (
+        <Suspense fallback={<div>Cargando...</div>}>
+            <WorkOrdersContent />
+        </Suspense>
+    );
 }

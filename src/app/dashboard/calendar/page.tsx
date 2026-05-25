@@ -23,6 +23,9 @@ interface CalendarOT {
   duration?: number;
   estado?: string;
   isOverdue?: boolean;
+  isAppointment?: boolean;
+  requestedDate?: string;
+  requestedTime?: string;
 }
 
 interface MecanicoCalendar {
@@ -87,6 +90,11 @@ export default function PizarraProgramacion() {
 
       let unassigned: CalendarOT[] = [];
 
+      const { data: aptData } = await supabase
+        .from("appointments")
+        .select("*")
+        .in("status", ["Pendiente", "Confirmado"]);
+
       if (woData) {
         const assignedEventMap = new Map();
         calData?.forEach(ev => {
@@ -114,6 +122,36 @@ export default function PizarraProgramacion() {
             otObj.startDate = new Date(calEvent.start_time);
             otObj.startHour = otObj.startDate.getHours();
             
+            const mec = initialMecanicos.find(m => m.id === calEvent.technician_id);
+            if (mec) mec.ots.push(otObj);
+          } else {
+            unassigned.push(otObj);
+          }
+        });
+      }
+
+      if (aptData) {
+        aptData.forEach(apt => {
+          // Check if appointment is already scheduled in calendar
+          const calEvent = calData?.find(e => e.appointment_id === apt.id);
+          const otObj: CalendarOT = {
+            id: apt.id,
+            eventId: calEvent?.id,
+            folio: 'AGENDA',
+            patente: apt.vehicle_plate,
+            tipo: apt.type,
+            actividad: apt.client_name,
+            estado: apt.status,
+            duration: apt.type.includes('Preventiva') ? 8 : 24, // Preventiva 1 día (8h), Correctiva (24h)
+            isOverdue: false,
+            isAppointment: true,
+            requestedDate: apt.requested_date,
+            requestedTime: apt.requested_time
+          };
+
+          if (calEvent && calEvent.technician_id) {
+            otObj.startDate = new Date(calEvent.start_time);
+            otObj.startHour = otObj.startDate.getHours();
             const mec = initialMecanicos.find(m => m.id === calEvent.technician_id);
             if (mec) mec.ots.push(otObj);
           } else {
@@ -166,14 +204,20 @@ export default function PizarraProgramacion() {
         technician_id: mechanicId
       }).eq('id', ot.eventId);
     } else {
-      const { data: inserted } = await supabase.from('calendar_events').insert({
+      const payload: any = {
         title: `${ot.folio} - ${ot.tipo}`,
         start_time: startDate.toISOString(),
         end_time: endDate.toISOString(),
-        work_order_id: ot.id,
         technician_id: mechanicId,
         workstation: 1
-      }).select().single();
+      };
+      if (ot.isAppointment) {
+         payload.appointment_id = ot.id;
+      } else {
+         payload.work_order_id = ot.id;
+      }
+
+      const { data: inserted } = await supabase.from('calendar_events').insert(payload).select().single();
       
       if (inserted) return inserted.id;
     }
@@ -629,16 +673,21 @@ export default function PizarraProgramacion() {
                    <span className="bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full text-[10px]">{pendingOts.length}</span>
                  </h3>
                  <div className="space-y-2">
-                   {pendingOts.map(ot => (
+                    {pendingOts.map(ot => (
                       <div key={ot.id} draggable onDragStart={(e) => handleDragStart(e, ot.id)}
-                           className="bg-background border border-border p-2.5 rounded-lg text-xs shadow-sm cursor-grab active:cursor-grabbing hover:border-primary transition-colors group">
+                           className={cn("border p-2.5 rounded-lg text-xs shadow-sm cursor-grab active:cursor-grabbing transition-colors group",
+                             ot.isAppointment ? "bg-primary/5 border-primary/20 hover:border-primary" : "bg-background border-border hover:border-primary"
+                           )}>
                          <div className="font-bold text-foreground flex justify-between items-center mb-1 text-[11px]">
-                           <span className="bg-muted px-1.5 py-0.5 rounded">{ot.folio}</span>
+                           <span className={cn("px-1.5 py-0.5 rounded", ot.isAppointment ? "bg-primary text-primary-foreground" : "bg-muted")}>{ot.folio}</span>
                            {ot.estado && <span className="bg-muted text-muted-foreground px-1.5 py-0.5 rounded text-[9px] uppercase tracking-wider truncate max-w-[80px]">{ot.estado}</span>}
                            <GripVertical className="w-4 h-4 text-muted-foreground group-hover:text-primary" />
                          </div>
                          <div className="font-semibold text-foreground truncate">{ot.tipo}</div>
-                         <div className="text-muted-foreground mt-0.5 font-bold">{ot.patente}</div>
+                         <div className="flex justify-between items-center mt-0.5">
+                            <div className="text-muted-foreground font-bold">{ot.patente}</div>
+                            {ot.requestedDate && <div className="text-[10px] text-primary">{new Date(ot.requestedDate).toLocaleDateString('es-CL')} {ot.requestedTime && `a las ${ot.requestedTime}`}</div>}
+                         </div>
                       </div>
                    ))}
                    {pendingOts.length === 0 && (

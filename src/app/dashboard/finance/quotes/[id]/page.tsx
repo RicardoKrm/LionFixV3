@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { User, Car, Calendar, FileText, CheckCircle, XCircle, Send, Printer, Wrench, Building, ShieldCheck } from "lucide-react";
+import { User, Car, Calendar, FileText, CheckCircle, XCircle, Send, Printer, Wrench, Building, ShieldCheck, MessageSquare } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -159,6 +159,16 @@ export default function QuoteDetailPage({
       title: "Cotización marcada como Enviada",
       description: `El estado de la cotización fue actualizado. Contacta al cliente ${client?.email} para enviarla.`,
     });
+  };
+
+  const handleWhatsApp = () => {
+    if (client?.phone) {
+      const message = encodeURIComponent(`Hola ${client.name}, te enviamos la cotización #${quote.id.slice(0, 8).toUpperCase()} por un total de $${quote.total.toLocaleString("es-CL")}. Puedes revisarla en tu portal.`);
+      const waUrl = `https://wa.me/${client.phone.replace(/\+/g, '')}?text=${message}`;
+      window.open(waUrl, '_blank');
+    } else {
+      toast({ variant: "destructive", title: "Error", description: "El cliente no tiene un teléfono registrado." });
+    }
   };
 
   const handleConvertToOT = async () => {
@@ -320,6 +330,7 @@ export default function QuoteDetailPage({
                 </CardHeader>
                  <CardContent className="flex flex-col gap-3">
                     <Button variant="outline" onClick={handleSend}><Send className="mr-2 h-4 w-4"/> Marcar como Enviada</Button>
+                    <Button className="w-full bg-[#25D366] hover:bg-[#128C7E]" onClick={handleWhatsApp}><MessageSquare className="mr-2 h-4 w-4"/> Enviar por WhatsApp</Button>
                     <Button variant="outline" onClick={() => window.print()}><Printer className="mr-2 h-4 w-4"/> Imprimir / PDF</Button>
                  </CardContent>
              </Card>

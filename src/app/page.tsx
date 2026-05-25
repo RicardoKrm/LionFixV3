@@ -8,6 +8,7 @@ import { useRef, useEffect } from "react";
 import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
 import { HeroCanvas } from "@/components/sections/HeroCanvas";
 import { ScrollLinkedEngine } from "@/components/sections/ScrollLinkedEngine";
+import { BookingForm } from "@/components/booking-form";
 import Lenis from "lenis";
 
 // Custom icons for heavy vehicles
@@ -115,7 +116,7 @@ export default function LandingPage() {
 
            <div className="container mx-auto px-4 max-w-6xl relative z-10">
                  <AnimatedSection className="text-center mb-20">
-                  <h2 className="text-4xl md:text-5xl font-headline font-bold text-white drop-shadow-xl">Por qué elegir LionFix</h2>
+                  <h2 className="text-4xl md:text-5xl font-headline font-bold text-white drop-shadow-xl">Por qué elegir LionFix Service</h2>
                   <p className="mt-4 text-xl text-white/80 max-w-2xl mx-auto font-light drop-shadow-lg">
                     Ingeniería de clase mundial y compromiso absoluto con la operatividad de tu negocio.
                   </p>
@@ -152,6 +153,25 @@ export default function LandingPage() {
         <div id="services">
           <ScrollLinkedEngine />
         </div>
+
+        {/* 4. Agendamiento (Booking) */}
+        <section id="booking" className="py-24 relative bg-background border-t border-white/5">
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-primary/5 via-transparent to-transparent pointer-events-none"></div>
+            <div className="container mx-auto px-4 max-w-4xl relative z-10">
+                 <AnimatedSection className="text-center mb-16">
+                  <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 mb-4">
+                    <span className="text-xs font-semibold text-primary uppercase tracking-wider">Agendamiento Online</span>
+                  </div>
+                  <h2 className="text-3xl md:text-4xl font-headline font-bold text-white drop-shadow-xl">Agenda tu Visita al Taller</h2>
+                  <p className="mt-4 text-lg text-white/80 font-light">
+                    Solicita una hora para mantención o tareas correctivas. Nos pondremos en contacto para confirmar tu cupo.
+                  </p>
+                </AnimatedSection>
+                <AnimatedSection className="bg-card/40 backdrop-blur-md border border-border/50 p-8 md:p-10 rounded-3xl shadow-2xl">
+                    <BookingForm />
+                </AnimatedSection>
+            </div>
+        </section>
 
       </main>
 
