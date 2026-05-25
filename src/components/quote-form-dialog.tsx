@@ -33,10 +33,9 @@ const quoteSchema = z.object({
     clientId: z.string().min(1, "Debe seleccionar un cliente."),
     vehicleId: z.string().min(1, "Debe seleccionar un vehículo."),
     items: z.array(quoteItemSchema).min(1, "Debe añadir al menos un ítem."),
-    total: z.number(),
 });
 
-type QuoteFormData = Omit<z.infer<typeof quoteSchema>, "total"> & { total?: number};
+type QuoteFormData = z.infer<typeof quoteSchema> & { total?: number };
 
 
 type QuoteFormDialogProps = {

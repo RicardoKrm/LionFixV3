@@ -79,7 +79,8 @@ export default function QuotesPage() {
       
       const clientPhone = newQuote.clients?.phone;
       if (clientPhone) {
-        const message = encodeURIComponent(`Hola ${newQuote.clients?.name}, te enviamos la cotización #${newQuote.id.slice(0, 8).toUpperCase()} por un total de $${newQuote.total.toLocaleString("es-CL")}. Puedes revisarla en tu portal.`);
+        const quoteLink = `${window.location.origin}/quote/${newQuote.id}`;
+        const message = encodeURIComponent(`Hola ${newQuote.clients?.name}, te enviamos la cotización #${newQuote.id.slice(0, 8).toUpperCase()} por un total de $${newQuote.total.toLocaleString("es-CL")}. Puedes revisarla detalladamente aquí: ${quoteLink}\n\nPara aprobarla, responde a este mensaje con un *1*. Para rechazarla, responde *2*.`);
         const waUrl = `https://wa.me/${clientPhone.replace(/\+/g, '')}?text=${message}`;
         window.open(waUrl, '_blank');
       }

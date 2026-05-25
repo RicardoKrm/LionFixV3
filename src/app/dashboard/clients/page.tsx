@@ -176,7 +176,7 @@ export default function ClientsPage() {
                       const clientVehicles = client.vehicles || [];
                       return (
                         <Collapsible asChild key={client.id}>
-                          <>
+                          <tbody className="border-0">
                             <TableRow>
                               <TableCell className="px-4">
                                 <CollapsibleTrigger asChild>
@@ -296,7 +296,7 @@ export default function ClientsPage() {
                                 </TableRow>
                               </CollapsibleContent>
                             )}
-                          </>
+                          </tbody>
                         </Collapsible>
                       );
                     })

@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Wrench, Paintbucket, Search, CheckCircle } from "lucide-react";
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Wrench, PaintBucket, Search, CheckCircle } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { format, addDays, startOfWeek, isSameDay } from "date-fns";
@@ -286,8 +286,9 @@ export function BookingForm() {
                   </SelectTrigger>
                   <SelectContent className="rounded-none">
                     <SelectItem value="Mercedes-Benz">Mercedes-Benz</SelectItem>
-                    <SelectItem value="Freightliner">Freightliner</SelectItem>
-                    <SelectItem value="Fuso">Fuso</SelectItem>
+                    <SelectItem value="Maxus">Maxus</SelectItem>
+                    <SelectItem value="Hyundai">Hyundai</SelectItem>
+                    <SelectItem value="Otros">Otros</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -321,7 +322,7 @@ export function BookingForm() {
             <h3 className="text-2xl font-light text-foreground mb-8">Selecciona los servicios que necesitas para tu mantención</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {[
-                { id: "Desabollado y Pintura", icon: Paintbucket },
+                { id: "Desabollado y Pintura", icon: PaintBucket },
                 { id: "Mantención Preventiva", icon: CalendarIcon },
                 { id: "Reparación", icon: Wrench },
               ].map(srv => {

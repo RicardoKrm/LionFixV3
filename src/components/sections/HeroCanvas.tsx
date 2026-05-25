@@ -6,7 +6,7 @@ export function HeroCanvas() {
       
       {/* The Background Video */}
       <video 
-        src="/videos/video1.mp4" 
+        src="/videos/VIDEO1.mp4" 
         autoPlay
         loop
         muted
@@ -22,7 +22,7 @@ export function HeroCanvas() {
       <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-6 pointer-events-none z-20">
          <div className="max-w-4xl mt-16"> {/* mt-16 to offset the fixed header */}
             <h1 className="text-4xl md:text-7xl font-headline font-bold text-primary tracking-tighter drop-shadow-[0_4px_20px_rgba(0,0,0,0.8)] mb-4 leading-tight">
-                LionFix Iquique
+                LionFix Service Iquique
             </h1>
             <h2 className="text-2xl md:text-4xl font-headline font-semibold text-white tracking-tight drop-shadow-[0_4px_15px_rgba(0,0,0,0.8)] mb-6">
                 Especialistas en Mercedes-Benz

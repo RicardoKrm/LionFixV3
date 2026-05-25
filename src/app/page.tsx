@@ -87,8 +87,10 @@ export default function LandingPage() {
            />
         </Link>
         <nav className="hidden md:flex items-center gap-6">
-            <Link href="#services" className="text-sm font-medium text-white/70 hover:text-white transition-colors">Servicios</Link>
+            <Link href="#" className="text-sm font-medium text-white/70 hover:text-white transition-colors">Inicio</Link>
             <Link href="#about" className="text-sm font-medium text-white/70 hover:text-white transition-colors">Nosotros</Link>
+            <Link href="#services" className="text-sm font-medium text-white/70 hover:text-white transition-colors">Servicios</Link>
+            <Link href="#booking" className="text-sm font-medium text-white/70 hover:text-white transition-colors">Agenda</Link>
             <Link href="#contact" className="text-sm font-medium text-white/70 hover:text-white transition-colors">Contacto</Link>
         </nav>
         <Button className="rounded-full px-6 font-medium tracking-wide bg-primary hover:bg-primary/90 text-white shadow-[0_0_20px_rgba(220,38,38,0.3)]">
