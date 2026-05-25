@@ -27,6 +27,7 @@ export type Part = {
   alertThreshold: number;
   cost: number; // Costo de compra para el taller
   price: number; // Precio de venta al cliente
+  supplier?: string;
 };
 
 export type WorkOrderStatus = 'Ingresado' | 'En Diagnóstico' | 'Esperando Aprobación' | 'Esperando Repuestos' | 'En Reparación' | 'Listo para Retiro' | 'Entregado' | 'Cancelado';
@@ -76,7 +77,7 @@ export type QuoteItem = {
     description: string;
     quantity: number;
     unitPrice: number;
-    total: number;
+    total?: number;
 }
 
 export type Quote = {
@@ -119,6 +120,7 @@ export type PurchaseOrderItem = {
 export type PurchaseOrder = {
     supplier: string;
     items: PurchaseOrderItem[];
+    notes?: string;
 };
 
 export type NotificationStatus = 'Programada' | 'Enviada' | 'Fallida';

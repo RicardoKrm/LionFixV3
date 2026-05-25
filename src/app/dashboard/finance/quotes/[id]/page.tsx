@@ -108,7 +108,7 @@ export default function QuoteDetailPage({
       <div className="flex flex-col items-center justify-center h-[calc(100vh-57px)]">
         <h2 className="text-xl font-semibold">Cotización no encontrada</h2>
         <p className="text-muted-foreground mt-2">
-          No se encontró la cotización con ID: {params.id}
+          No se encontró la cotización con ID: {resolvedParams.id}
         </p>
         <Button className="mt-4" onClick={() => router.back()}>
           Volver
@@ -315,7 +315,7 @@ export default function QuoteDetailPage({
                     <CardTitle>Estado Actual</CardTitle>
                 </CardHeader>
                 <CardContent>
-                     <Badge variant={getStatusVariant(status)} className="text-base px-4 py-1 w-full justify-center">{status}</Badge>
+                     <Badge variant={getStatusVariant(status as any)} className="text-base px-4 py-1 w-full justify-center">{status}</Badge>
                     {status === 'Aprobada' && (
                         <p className="text-sm text-green-400 pt-2 text-center">¡El cliente ha aprobado el presupuesto!</p>
                     )}

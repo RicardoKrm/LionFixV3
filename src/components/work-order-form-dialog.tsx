@@ -162,7 +162,8 @@ export function WorkOrderFormDialog({
   const handleFormSubmit = (data: WorkOrderFormData) => {
     const finalData = {
       ...data,
-      status: workOrder?.status || 'Recibido',
+      technician: data.technician || "",
+      status: (workOrder?.status || 'Ingresado') as WorkOrderStatus,
       parts: data.parts || [],
     };
     onSubmit(finalData);

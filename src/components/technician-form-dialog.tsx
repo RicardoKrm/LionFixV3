@@ -80,7 +80,7 @@ export function TechnicianFormDialog({
 
   useEffect(() => {
     if (isOpen) {
-      form.reset(toFormValues(technician));
+      form.reset(toFormValues(technician || null));
     }
   }, [technician, form, isOpen]);
 

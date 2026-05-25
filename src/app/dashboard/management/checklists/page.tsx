@@ -24,7 +24,7 @@ import { Progress } from "@/components/ui/progress";
 import {
   PlusCircle, FileText, CheckSquare, Truck, ClipboardCheck,
   ClipboardX, Car, X, Camera, Upload, Trash2, Plus, ImageIcon,
-  ChevronRight, ChevronLeft, ClipboardList,
+  ChevronRight, ChevronLeft, ClipboardList, Wrench,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";

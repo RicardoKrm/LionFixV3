@@ -8,9 +8,7 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-type Status = WorkOrderStatus | QuoteStatus | NotificationStatus | FleetContractStatus;
-
-export const getStatusVariant = (status: Status): "default" | "secondary" | "destructive" | "outline" => {
+export const getStatusVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
     switch (status) {
       case "Completado":
       case "Entregado":

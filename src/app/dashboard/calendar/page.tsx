@@ -1,13 +1,14 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Clock, GripVertical, Search, AlertCircle, Plus, Calendar as CalendarIcon, Check } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Clock, GripVertical, Search, AlertCircle, Plus, Calendar as CalendarIcon, Check, CalendarX2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 import { DashboardHeader } from '@/components/dashboard-header';
 import { Button } from '@/components/ui/button';
+import { BlockedDatesDialog } from '@/components/blocked-dates-dialog';
 
 type OTTipo = 'Preventiva' | 'Correctiva' | 'Evaluativa' | 'Preventiva Neumático' | 'Correctiva Neumático' | 'Evaluativa Neumático' | 'Inspección';
 
@@ -53,6 +54,7 @@ export default function PizarraProgramacion() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [draggedOt, setDraggedOt] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isBlockedDatesOpen, setIsBlockedDatesOpen] = useState(false);
   
   const hours = Array.from({length: 11}, (_, i) => i + 8); 
 
@@ -740,7 +742,11 @@ export default function PizarraProgramacion() {
                  </div>
               </div>
 
-              <div className="flex items-center gap-4">                 
+              <div className="flex items-center gap-4">
+                 <Button onClick={() => setIsBlockedDatesOpen(true)} variant="destructive" className="shadow-sm">
+                   <CalendarX2 className="w-4 h-4 mr-2" />
+                   Gestionar Disponibilidad
+                 </Button>                 
                  <select 
                     value={viewMode} 
                     onChange={(e) => setViewMode(e.target.value as any)}
@@ -762,6 +768,7 @@ export default function PizarraProgramacion() {
 
         </div>
       </div>
+      <BlockedDatesDialog isOpen={isBlockedDatesOpen} onOpenChange={setIsBlockedDatesOpen} />
     </div>
   );
 }

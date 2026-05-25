@@ -1,8 +1,8 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
-import { notFound } from "next/navigation";
+import React, { useEffect, useState } from "react";
+import { notFound, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { DashboardHeader } from "@/components/dashboard-header";
 import {

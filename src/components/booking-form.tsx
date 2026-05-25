@@ -26,6 +26,7 @@ export function BookingForm() {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [reservationResult, setReservationResult] = useState<any>(null);
+  const [blockedDates, setBlockedDates] = useState<string[]>([]);
 
   const [formData, setFormData] = useState({
     plate: "",
@@ -44,6 +45,16 @@ export function BookingForm() {
   });
 
   const [currentWeekStart, setCurrentWeekStart] = useState(() => startOfWeek(new Date(), { weekStartsOn: 1 }));
+
+  useEffect(() => {
+     const fetchBlockedDates = async () => {
+        const { data } = await supabase.from('blocked_dates').select('blocked_date');
+        if (data) {
+           setBlockedDates(data.map(d => d.blocked_date));
+        }
+     };
+     fetchBlockedDates();
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
@@ -378,32 +389,41 @@ export function BookingForm() {
                      {Array.from({ length: 6 }).map((_, i) => {
                         const dayDate = addDays(currentWeekStart, i);
                         const isPast = dayDate < new Date(new Date().setHours(0,0,0,0));
+                        const dateString = dayDate.toISOString().split('T')[0];
+                        const isBlocked = blockedDates.includes(dateString);
+                        
                         return (
                           <div key={i} className="flex flex-col gap-2">
                             <div className="text-center pb-2">
                               <p className="text-xs font-medium text-foreground capitalize">{format(dayDate, 'EEEE', { locale: es })}</p>
                               <p className="text-sm font-bold text-muted-foreground">{format(dayDate, 'd')}</p>
                             </div>
-                            {HOURS.map(hour => {
-                               const isSelected = formData.date && isSameDay(formData.date, dayDate) && formData.time === hour;
-                               return (
-                                 <button
-                                   key={hour}
-                                   disabled={isPast}
-                                   onClick={() => {
-                                      setFormData(prev => ({...prev, date: dayDate, time: hour}));
-                                   }}
-                                   className={cn(
-                                     "py-2 text-xs font-medium border rounded-none transition-colors",
-                                     isSelected ? "bg-primary text-primary-foreground border-primary" : 
-                                     isPast ? "bg-muted text-muted-foreground/30 border-transparent cursor-not-allowed" : 
-                                     "bg-card text-primary border-primary/30 hover:border-primary hover:bg-primary/5"
-                                   )}
-                                 >
-                                   {hour}
-                                 </button>
-                               )
-                            })}
+                            {isBlocked ? (
+                               <div className="flex-1 min-h-[300px] flex items-center justify-center border border-dashed border-destructive/30 bg-destructive/5 rounded-none p-2 text-center">
+                                  <p className="text-[10px] font-bold text-destructive uppercase">Sin Disponibilidad</p>
+                               </div>
+                            ) : (
+                              HOURS.map(hour => {
+                                 const isSelected = formData.date && isSameDay(formData.date, dayDate) && formData.time === hour;
+                                 return (
+                                   <button
+                                     key={hour}
+                                     disabled={isPast}
+                                     onClick={() => {
+                                        setFormData(prev => ({...prev, date: dayDate, time: hour}));
+                                     }}
+                                     className={cn(
+                                       "py-2 text-xs font-medium border rounded-none transition-colors",
+                                       isSelected ? "bg-primary text-primary-foreground border-primary" : 
+                                       isPast ? "bg-muted text-muted-foreground/30 border-transparent cursor-not-allowed" : 
+                                       "bg-card text-primary border-primary/30 hover:border-primary hover:bg-primary/5"
+                                     )}
+                                   >
+                                     {hour}
+                                   </button>
+                                 )
+                              })
+                            )}
                           </div>
                         )
                      })}
