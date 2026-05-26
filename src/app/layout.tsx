@@ -5,6 +5,7 @@ import { AuthProvider } from "@/context/auth-context";
 
 // SEO Metadata Optimized for Local Search (Iquique)
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://lionfix-erp.vercel.app'),
   title: "LionFix | Taller Mecánico Especialista en Mercedes Sprinter en Iquique",
   description: "El mejor taller mecánico en Iquique, Chile, especializado en furgones Mercedes-Benz Sprinter y vehículos comerciales. Diagnóstico avanzado, repuestos premium y mantenimiento de flotas con estándar alemán.",
   keywords: "taller mecanico iquique, especialista sprinter iquique, reparacion mercedes benz iquique, mecanico sprinter, taller vehiculos comerciales iquique, mantencion sprinter iquique, lionfix iquique, repuestos mercedes iquique",
