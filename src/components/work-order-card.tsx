@@ -52,7 +52,7 @@ export function WorkOrderCard({
                 <div>
                     <CardTitle className="text-lg">{workOrder.vehicle.make} {workOrder.vehicle.model}</CardTitle>
                     <CardDescription>
-                        {workOrder.client.name} / <span className="font-mono">{workOrder.vehicle.licensePlate}</span>
+                        {workOrder.client.name} / <span className="font-mono">{workOrder.vehicle.licensePlate || (workOrder.vehicle as any).license_plate || "Sin Patente"}</span>
                     </CardDescription>
                 </div>
                 {onUpdateStatus ? (
@@ -80,7 +80,7 @@ export function WorkOrderCard({
             <div className="flex items-start gap-3 pt-4 flex-grow">
                 <Wrench className="h-5 w-5 text-accent mt-0.5 flex-shrink-0" />
                 <div>
-                    <p className="font-semibold leading-tight text-primary">{workOrder.id}</p>
+                    <p className="font-semibold leading-tight text-primary">{(workOrder as any).ot_number ? `${(workOrder as any).ot_number} - ` : ''}{workOrder.type}</p>
                     <p className="text-sm text-muted-foreground">{workOrder.service}</p>
                 </div>
             </div>
