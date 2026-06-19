@@ -35,6 +35,7 @@ import {
   HardHat,
   UserSquare,
   Blocks,
+  Clock,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -202,6 +203,17 @@ export function AppSidebar() {
               >
                 <Users />
                 <span>Gestión de Usuarios</span>
+              </SidebarMenuButton>
+            </Link>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <Link href="/dashboard/management/attendance" passHref>
+              <SidebarMenuButton
+                isActive={isActive("/dashboard/management/attendance")}
+                tooltip="Control de Asistencia"
+              >
+                <Clock />
+                <span>Control de Asistencia</span>
               </SidebarMenuButton>
             </Link>
           </SidebarMenuItem>
