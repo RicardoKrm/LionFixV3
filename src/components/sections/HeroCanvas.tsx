@@ -6,7 +6,7 @@ export function HeroCanvas() {
       
       {/* The Background Video */}
       <video 
-        src="/videos/VIDEO1.mp4" 
+        src="/videos/video1.mp4" 
         autoPlay
         loop
         muted
