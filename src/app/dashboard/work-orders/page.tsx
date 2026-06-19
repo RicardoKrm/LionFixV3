@@ -114,9 +114,12 @@ function WorkOrdersContent() {
   }, [workOrders, statusFilter, searchTerm]);
 
   const handleFormSubmit = async (data: any) => {
+    const otNumber = `OT-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+    
     const { data: newWo, error } = await supabase
       .from("work_orders")
       .insert({
+        ot_number: otNumber,
         client_id: data.clientId,
         vehicle_id: data.vehicleId,
         service_description: data.service,
@@ -124,12 +127,35 @@ function WorkOrdersContent() {
         technician_id: null,
         labor_hours: data.laborHours,
         status: "Ingresado",
-        parts_used: data.parts || [],
       })
       .select(`*, clients(name), vehicles(make, model, license_plate, year)`)
       .single();
+      
+    if (error) {
+      console.error("Error inserting work order:", error);
+    }
 
     if (!error && newWo) {
+      if (data.parts && data.parts.length > 0) {
+        const skus = data.parts.map((p: any) => p.sku);
+        const { data: dbParts } = await supabase.from('parts').select('id, sku').in('sku', skus);
+        if (dbParts) {
+          const partsToInsert = data.parts.map((p: any) => {
+            const dbPart = dbParts.find((dbP) => dbP.sku === p.sku);
+            return {
+              work_order_id: newWo.id,
+              part_id: dbPart?.id,
+              quantity: p.quantity,
+              unit_price: p.price,
+            };
+          }).filter((p: any) => p.part_id);
+          
+          if (partsToInsert.length > 0) {
+            await supabase.from('work_order_parts').insert(partsToInsert);
+          }
+        }
+      }
+
       const enriched = {
         ...newWo,
         client: newWo.clients || { name: "N/A" },
