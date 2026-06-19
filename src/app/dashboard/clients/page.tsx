@@ -170,14 +170,13 @@ export default function ClientsPage() {
                     <TableHead className="text-right">Acciones</TableHead>
                   </TableRow>
                 </TableHeader>
-                <TableBody>
-                  {filteredClients.length > 0 ? (
-                    filteredClients.map((client) => {
-                      const clientVehicles = client.vehicles || [];
-                      return (
-                        <Collapsible asChild key={client.id}>
-                          <tbody className="border-0">
-                            <TableRow>
+                {filteredClients.length > 0 ? (
+                  filteredClients.map((client) => {
+                    const clientVehicles = client.vehicles || [];
+                    return (
+                      <Collapsible asChild key={client.id}>
+                        <TableBody className="border-0">
+                          <TableRow>
                               <TableCell className="px-4">
                                 <CollapsibleTrigger asChild>
                                   <Button
@@ -296,18 +295,19 @@ export default function ClientsPage() {
                                 </TableRow>
                               </CollapsibleContent>
                             )}
-                          </tbody>
+                          </TableBody>
                         </Collapsible>
                       );
                     })
                   ) : (
-                    <TableRow>
-                      <TableCell colSpan={5} className="h-24 text-center">
-                        No se encontraron clientes.
-                      </TableCell>
-                    </TableRow>
+                    <TableBody>
+                      <TableRow>
+                        <TableCell colSpan={5} className="h-24 text-center">
+                          No se encontraron clientes.
+                        </TableCell>
+                      </TableRow>
+                    </TableBody>
                   )}
-                </TableBody>
               </Table>
             </div>
           </CardContent>

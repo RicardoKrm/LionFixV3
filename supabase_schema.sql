@@ -58,7 +58,7 @@ BEGIN
   INSERT INTO public.profiles (id, name, role, avatar_url)
   VALUES (
     new.id,
-    new.raw_user_meta_data->>'name',
+    COALESCE(new.raw_user_meta_data->>'name', 'Usuario Sin Nombre'),
     COALESCE(new.raw_user_meta_data->>'role', 'client'), -- Por defecto será cliente
     'https://placehold.co/100x100.png'
   );
