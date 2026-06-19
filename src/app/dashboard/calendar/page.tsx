@@ -219,7 +219,11 @@ export default function PizarraProgramacion() {
          payload.work_order_id = ot.id;
       }
 
-      const { data: inserted } = await supabase.from('calendar_events').insert(payload).select().single();
+      const { data: inserted, error } = await supabase.from('calendar_events').insert(payload).select().single();
+      
+      if (error) {
+        console.error("Error guardando evento:", error);
+      }
       
       if (inserted) return inserted.id;
     }
