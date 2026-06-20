@@ -69,6 +69,7 @@ export function AppSidebar() {
 
   return (
     <Sidebar>
+      <SidebarHeader>
         <div className="flex items-center justify-between px-1 py-1">
           <Image
             src="/logo2.png"
