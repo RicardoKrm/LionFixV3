@@ -11,6 +11,7 @@ import {
   SidebarContent,
   SidebarFooter,
   SidebarSeparator,
+  SidebarTrigger,
 } from "@/components/ui/sidebar";
 import {
   Home,
@@ -68,8 +69,7 @@ export function AppSidebar() {
 
   return (
     <Sidebar>
-      <SidebarHeader>
-        <div className="flex items-center gap-3 px-1 py-1">
+        <div className="flex items-center justify-between px-1 py-1">
           <Image
             src="/logo2.png"
             alt="LionFix Service"
@@ -78,6 +78,7 @@ export function AppSidebar() {
             className="h-14 w-auto object-contain drop-shadow-[0_0_10px_rgba(202,162,0,0.3)]"
             priority
           />
+          <SidebarTrigger className="ml-auto text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent rounded-md transition-colors" />
         </div>
       </SidebarHeader>
       <SidebarContent className="p-4">
