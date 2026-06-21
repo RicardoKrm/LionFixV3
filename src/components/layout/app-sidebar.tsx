@@ -296,7 +296,7 @@ export function AppSidebar() {
                  </AlertDialogHeader>
                  <AlertDialogFooter>
                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                   <AlertDialogAction onClick={async () => { await logout(); router.push('/'); }}>Aceptar</AlertDialogAction>
+                   <AlertDialogAction onClick={() => logout()}>Aceptar</AlertDialogAction>
                  </AlertDialogFooter>
                </AlertDialogContent>
              </AlertDialog>

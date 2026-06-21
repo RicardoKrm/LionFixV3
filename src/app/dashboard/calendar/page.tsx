@@ -144,16 +144,26 @@ export default function PizarraProgramacion() {
             tipo: apt.type,
             actividad: apt.client_name,
             estado: apt.status,
-            duration: apt.type.includes('Preventiva') ? 8 : 24, // Preventiva 1 día (8h), Correctiva (24h)
+            duration: 3, // Bloques de 3 horas como solicitó el cliente
             isOverdue: false,
             isAppointment: true,
             requestedDate: apt.requested_date,
             requestedTime: apt.requested_time
           };
 
+          // Si el cliente eligió fecha/hora en el portal, la guardamos para mostrarla en el calendario
+          if (apt.requested_date) {
+            const [year, month, day] = apt.requested_date.split('-');
+            const hour = apt.requested_time ? parseInt(apt.requested_time.split(':')[0], 10) : 8;
+            otObj.startDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day), hour, 0, 0);
+            otObj.startHour = hour;
+          }
+
           if (calEvent && calEvent.technician_id) {
-            otObj.startDate = new Date(calEvent.start_time);
-            otObj.startHour = otObj.startDate.getHours();
+            if (calEvent.start_time) {
+              otObj.startDate = new Date(calEvent.start_time);
+              otObj.startHour = otObj.startDate.getHours();
+            }
             const mec = initialMecanicos.find(m => m.id === calEvent.technician_id);
             if (mec) mec.ots.push(otObj);
           } else {
@@ -362,9 +372,18 @@ export default function PizarraProgramacion() {
              });
           });
        });
+       pendingOts.filter(ot => ot.startDate && isSameDay(ot.startDate, dayDate)).forEach(ot => {
+             dailyEvents.push({
+               title: `${ot.startHour}:00 (CITA) ${ot.patente}`,
+               color: getTipoColor(ot.tipo),
+               isOverdue: false,
+               otId: ot.id
+             });
+       });
        dailyEvents.sort((a,b) => a.title.localeCompare(b.title));
        days.push({ date: dayDate, isCurrentMonth: true, isToday: isSameDay(dayDate, new Date()), events: dailyEvents });
     }
+
 
     const remaining = 42 - days.length; 
     for(let i=1; i<=remaining; i++) {
@@ -528,6 +547,30 @@ export default function PizarraProgramacion() {
                          )
                       })
                    )}
+                   {/* Renderizar citas sin asignar en la vista semanal */}
+                   {pendingOts.filter(ot => ot.startDate && isSameDay(ot.startDate, wd.date)).map(ot => {
+                         const top = (ot.startHour! - 8) * 80;
+                         const height = (ot.duration || 1) * 80;
+                         return (
+                           <div key={ot.id} onClick={() => router.push(`/dashboard/work-orders/${ot.id}`)}
+                                draggable
+                                onDragStart={(e) => handleDragStart(e, ot.id)}
+                                className={cn("absolute left-1 right-1 flex flex-col rounded p-1.5 text-white shadow-sm overflow-hidden cursor-pointer hover:shadow-md transition-all hover:z-50 border-2 border-dashed border-white/50", 
+                                  getTipoColor(ot.tipo)
+                                )}
+                                style={{ top: `${top + 1}px`, height: `${height - 2}px` }}>
+                              <div className="text-[9px] font-bold opacity-90 truncate flex justify-between gap-1 items-center">
+                                 <span>{ot.folio}</span>
+                              </div>
+                              <div className="text-[9px] leading-tight truncate mt-0.5 font-medium">Sin Asignar</div>
+                              <div className="mt-auto flex flex-col gap-0.5">
+                                 <div className="text-[9px] truncate opacity-90 flex justify-between items-center gap-1 w-full">
+                                    <span className="font-bold">{ot.patente}</span>
+                                 </div>
+                              </div>
+                           </div>
+                         )
+                   })}
                  </div>
                  )
               })}
@@ -538,19 +581,25 @@ export default function PizarraProgramacion() {
 
   const renderDayView = () => {
      const activeMecanicos = mecanicos.filter(m => m.selected);
+     const dummySinAsignar = {
+        id: 'unassigned',
+        nombre: 'Citas por Asignar',
+        especialidad: 'Agenda Web',
+        selected: true,
+        ots: pendingOts
+     };
+     const columnsToRender = [dummySinAsignar, ...activeMecanicos];
+
      return (
         <div className="flex-1 flex flex-col min-h-0 bg-background overflow-hidden">
            <div className="flex border-b border-border">
              <div className="w-16 shrink-0 border-r border-border bg-background z-20"></div>
-             {activeMecanicos.map(m => (
-               <div key={m.id} className="flex-1 min-w-[150px] py-3 text-center border-r border-border last:border-r-0">
+             {columnsToRender.map(m => (
+               <div key={m.id} className={cn("flex-1 min-w-[150px] py-3 text-center border-r border-border last:border-r-0", m.id === 'unassigned' && 'bg-muted/30')}>
                  <div className="font-semibold text-foreground text-sm truncate px-2">{m.nombre}</div>
                  <div className="text-[10px] text-muted-foreground uppercase mt-0.5">{m.especialidad}</div>
                </div>
              ))}
-             {activeMecanicos.length === 0 && (
-                <div className="flex-1 py-4 text-center text-muted-foreground text-sm">Seleccione mecánicos en el panel izquierdo.</div>
-             )}
            </div>
            
            <div className="flex-1 overflow-y-auto overflow-x-auto relative flex custom-scrollbar">
@@ -561,12 +610,13 @@ export default function PizarraProgramacion() {
                    </div>
                  ))}
               </div>
-              {activeMecanicos.map(m => (
-                 <div key={m.id} className="flex-1 min-w-[150px] border-r border-border relative z-10">
+              {columnsToRender.map(m => (
+                 <div key={m.id} className={cn("flex-1 min-w-[150px] border-r border-border relative z-10", m.id === 'unassigned' && 'bg-muted/10')}>
                    {hours.map(h => (
                      <div key={h} className="h-20 border-b border-border border-dashed hover:bg-accent transition-colors"
                           onDragOver={handleDragOver}
                           onDrop={(e) => {
+                             if (m.id === 'unassigned') return; // No permitir dropear en la columna "Sin Asignar"
                              const dropDate = new Date(currentDate);
                              dropDate.setHours(h, 0, 0, 0);
                              handleDrop(e, m.id, dropDate);
@@ -583,7 +633,8 @@ export default function PizarraProgramacion() {
                              onDragStart={(e) => handleDragStart(e, ot.id)}
                              className={cn("absolute left-1 right-1 rounded-lg p-2 text-white shadow-sm overflow-hidden cursor-pointer hover:shadow-md transition-all flex flex-col", 
                                getTipoColor(ot.tipo),
-                               ot.isOverdue && "ring-2 ring-red-500 border-2 border-red-500 animate-pulse"
+                               ot.isOverdue && "ring-2 ring-red-500 border-2 border-red-500 animate-pulse",
+                               m.id === 'unassigned' && "border-2 border-dashed border-white/50"
                              )}
                              style={{ top: `${top + 2}px`, height: `${height - 4}px` }}>
                            <div className="text-[10px] font-bold opacity-90 leading-tight truncate flex justify-between">
@@ -606,6 +657,7 @@ export default function PizarraProgramacion() {
                    })}
                  </div>
               ))}
+
            </div>
         </div>
      );
