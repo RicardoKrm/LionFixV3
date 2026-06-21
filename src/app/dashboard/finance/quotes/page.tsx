@@ -57,42 +57,68 @@ export default function QuotesPage() {
   }
 
   const handleFormSubmit = async (data: any) => {
+    // 1. Generate a unique quote_number
+    const year = new Date().getFullYear();
+    const { count } = await supabase.from("quotes").select("*", { count: "exact", head: true });
+    const nextNum = String((count || 0) + 1).padStart(3, "0");
+    const quoteNumber = `COT-${year}-${nextNum}`;
+
+    // 2. Insert the main quote record
     const { data: newQuote, error } = await supabase
       .from("quotes")
       .insert({
+        quote_number: quoteNumber,
         client_id: data.clientId,
         vehicle_id: data.vehicleId,
         status: "Enviada",
         total: data.total,
-        items: data.items,
-        notes: data.notes,
+        notes: data.notes || null,
       })
-      .select(`*, clients(name), vehicles(make, model, license_plate)`)
+      .select(`*, clients(name, phone), vehicles(make, model, license_plate)`)
       .single();
 
-    if (!error && newQuote) {
-      setQuotes([newQuote, ...quotes]);
-      toast({
-        title: "Cotización Creada",
-        description: `Se ha creado la cotización exitosamente.`,
-      });
-      
-      const clientPhone = newQuote.clients?.phone;
-      if (clientPhone) {
-        const quoteLink = `${window.location.origin}/quote/${newQuote.id}`;
-        const message = encodeURIComponent(`Hola ${newQuote.clients?.name}, te enviamos la cotización #${newQuote.id.slice(0, 8).toUpperCase()} por un total de $${newQuote.total.toLocaleString("es-CL")}. Puedes revisarla detalladamente aquí: ${quoteLink}\n\nPara aprobarla, responde a este mensaje con un *1*. Para rechazarla, responde *2*.`);
-        const waUrl = `https://wa.me/${clientPhone.replace(/\+/g, '')}?text=${message}`;
-        window.open(waUrl, '_blank');
-      }
-    } else {
+    if (error || !newQuote) {
       toast({
         variant: "destructive",
         title: "Error al crear",
-        description: "No se pudo guardar la cotización.",
+        description: "No se pudo guardar la cotización: " + (error?.message || ""),
       });
+      setIsFormOpen(false);
+      return;
     }
+
+    // 3. Insert items into quote_items table
+    if (data.items && data.items.length > 0) {
+      const itemRows = data.items.map((item: any) => ({
+        quote_id: newQuote.id,
+        description: item.description,
+        quantity: item.quantity,
+        unit_price: item.unitPrice,
+        total: item.quantity * item.unitPrice,
+      }));
+      await supabase.from("quote_items").insert(itemRows);
+    }
+
+    setQuotes([newQuote, ...quotes]);
+    toast({
+      title: `✅ Cotización ${quoteNumber} Creada`,
+      description: `Cotización creada para ${newQuote.clients?.name || "el cliente"}.`,
+    });
+
+    // 4. Open WhatsApp if client has phone
+    const clientPhone = newQuote.clients?.phone;
+    if (clientPhone) {
+      const quoteLink = `${window.location.origin}/quote/${newQuote.id}`;
+      const message = encodeURIComponent(
+        `Hola ${newQuote.clients?.name}, te enviamos la cotización ${quoteNumber} por un total de $${newQuote.total.toLocaleString("es-CL")}. Revísala y apruébala aquí: ${quoteLink}`
+      );
+      const waUrl = `https://wa.me/${clientPhone.replace(/\+/g, "")}?text=${message}`;
+      window.open(waUrl, "_blank");
+    }
+
     setIsFormOpen(false);
   };
+
 
   if (loading) {
     return (

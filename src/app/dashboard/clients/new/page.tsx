@@ -38,20 +38,48 @@ export default function NewClientPage() {
     setIsSubmitting(true);
 
     try {
-      // 1. Crear el Cliente
+      // 1. Create Auth account for the client (using signUp)
+      let authUserId: string | null = null;
+      if (clientData.email) {
+        const autoPassword = Array.from({ length: 12 }, () =>
+          "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789".charAt(
+            Math.floor(Math.random() * 55)
+          )
+        ).join("");
+
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+          email: clientData.email,
+          password: autoPassword,
+          options: { data: { name: clientData.name, role: "client" } },
+        });
+
+        if (!signUpError && signUpData.user) {
+          authUserId = signUpData.user.id;
+          // Upsert profile with client role
+          await supabase.from("profiles").upsert({
+            id: authUserId,
+            name: clientData.name,
+            email: clientData.email,
+            role: "client",
+          }, { onConflict: "id" });
+        }
+      }
+
+      // 2. Create the client record, linking to auth user if created
       const { data: newClient, error: clientError } = await supabase
         .from("clients")
         .insert({
           name: clientData.name,
           email: clientData.email,
           phone: clientData.phone,
+          ...(authUserId ? { user_id: authUserId } : {}),
         })
         .select()
         .single();
 
       if (clientError) throw new Error("Error al crear el cliente: " + clientError.message);
 
-      // 2. Crear el Vehículo asociado
+      // 3. Create the associated vehicle
       const { error: vehicleError } = await supabase
         .from("vehicles")
         .insert({
@@ -65,7 +93,7 @@ export default function NewClientPage() {
 
       if (vehicleError) throw new Error("Error al registrar el vehículo: " + vehicleError.message);
 
-      // 3. Registrar en ISO 9001
+      // 4. ISO 9001 log
       await supabase.from("iso_logs").insert({
         event_type: "Ingreso de Nuevo Cliente y Vehículo",
         description: `Se registró al cliente ${clientData.name} junto con su vehículo patente ${vehicleData.license_plate}.`,
@@ -76,7 +104,9 @@ export default function NewClientPage() {
 
       toast({
         title: "Registro Exitoso",
-        description: "El cliente y su vehículo han sido guardados correctamente.",
+        description: authUserId
+          ? `El cliente ${clientData.name} fue registrado con acceso al portal (${clientData.email}).`
+          : `El cliente y su vehículo han sido guardados correctamente.`,
       });
 
       router.push("/dashboard/clients");
@@ -91,6 +121,7 @@ export default function NewClientPage() {
       setIsSubmitting(false);
     }
   };
+
 
   return (
     <div className="flex flex-col h-[calc(100vh-57px)]">

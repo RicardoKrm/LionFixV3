@@ -29,6 +29,7 @@ import { Textarea } from "./ui/textarea";
 
 const technicianSchema = z.object({
   name: z.string().min(3, "El nombre es requerido."),
+  email: z.string().email("Email inválido."),
   avatarUrl: z.string().url("Debe ser una URL válida.").or(z.literal("")),
   specialties: z.string().min(3, "Indique al menos una especialidad."),
   hireDate: z.string().refine((val) => !isNaN(Date.parse(val)), { message: "Fecha inválida" }),
@@ -44,6 +45,7 @@ type TechnicianFormData = z.infer<typeof technicianSchema>;
 // This helper converts between the form's string representation and the model's array
 const toFormValues = (technician: Technician | null) => ({
   name: technician?.name || "",
+  email: "",
   avatarUrl: technician?.avatarUrl || ``,
   specialties: technician?.specialties.join(", ") || "",
   hireDate: technician ? new Date(technician.hireDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
@@ -94,7 +96,7 @@ export function TechnicianFormDialog({
         <DialogHeader>
           <DialogTitle>{technician ? "Editar Técnico" : "Nuevo Técnico"}</DialogTitle>
           <DialogDescription>
-            {technician ? "Actualice los datos del técnico." : "Complete la información del nuevo miembro del equipo."}
+            {technician ? "Actualice los datos del técnico." : "Complete el formulario para crear la cuenta y perfil del nuevo técnico."}
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -112,6 +114,26 @@ export function TechnicianFormDialog({
                 </FormItem>
               )}
             />
+
+            {/* Email — only when creating */}
+            {!technician && (
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email de Acceso</FormLabel>
+                    <FormControl>
+                      <Input type="email" placeholder="tecnico@lionfix.cl" {...field} />
+                    </FormControl>
+                    <FormDescription>
+                      Se generará una contraseña automáticamente y se mostrará al guardar.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
             <FormField
               control={form.control}
               name="avatarUrl"

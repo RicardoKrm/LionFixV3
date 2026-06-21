@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from "react";
@@ -13,7 +12,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { PlusCircle, User, Calendar, MoreHorizontal, Edit, Trash2 } from "lucide-react";
+import { PlusCircle, User, Calendar, MoreHorizontal, Edit, Trash2, Copy, KeyRound } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import type { Technician } from "@/types";
 import { useToast } from "@/hooks/use-toast";
@@ -35,8 +34,21 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { TechnicianFormDialog } from "@/components/technician-form-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
+
+function generatePassword(): string {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$';
+  return Array.from({ length: 12 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+}
 
 
 export default function TechniciansPage() {
@@ -45,6 +57,7 @@ export default function TechniciansPage() {
   const [selectedTechnician, setSelectedTechnician] = useState<Technician | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isAlertOpen, setIsAlertOpen] = useState(false);
+  const [createdCredentials, setCreatedCredentials] = useState<{ name: string; email: string; password: string } | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -126,35 +139,92 @@ export default function TechniciansPage() {
     setSelectedTechnician(null);
   };
 
-  const handleFormSubmit = async (data: Omit<Technician, "id">) => {
+  const handleFormSubmit = async (data: any) => {
     if (selectedTechnician) {
-      // Edit: update profile name + upsert technician_details
+      // EDIT: update profile name + upsert technician_details
       await supabase.from('profiles').update({ name: data.name }).eq('id', selectedTechnician.id);
       const { error } = await supabase.from('technician_details').upsert({
-        user_id: selectedTechnician.id,
+        profile_id: selectedTechnician.id,
         specialties: data.specialties,
         hire_date: data.hireDate,
+        contact_phone: data.contact,
+        base_salary: data.baseSalary,
+        extra_hour_rate: data.extraHourRate,
         extra_hours_this_month: data.extraHoursThisMonth,
         max_extra_hours: data.maxExtraHours,
-      }, { onConflict: 'user_id' });
+      }, { onConflict: 'profile_id' });
       if (!error) {
         setTechnicians(technicians.map((t) => t.id === selectedTechnician.id ? { ...t, ...data } : t));
-        toast({ title: "Técnico Actualizado", description: "Los datos han sido guardados en la base de datos." });
+        toast({ title: "Técnico Actualizado", description: "Los datos han sido guardados." });
       } else {
         toast({ variant: "destructive", title: "Error", description: error.message });
       }
     } else {
-      // Create: a new technician must be a registered user with role 'mechanic'.
-      // This flow requires the user to already have an account. We update their role.
-      toast({
-        title: "Para añadir un técnico",
-        description: "El técnico debe registrarse primero en la app. Luego, en Supabase cambia su rol a 'mechanic' en la tabla profiles.",
-        variant: "default",
+      const autoPassword = generatePassword();
+
+      // Use signUp to create the user
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        email: data.email,
+        password: autoPassword,
+        options: {
+          data: { name: data.name, role: 'mechanic' }
+        }
       });
+
+      if (signUpError || !signUpData.user) {
+        toast({ variant: "destructive", title: "Error al crear cuenta", description: signUpError?.message || "No se pudo crear la cuenta." });
+        return;
+      }
+
+      const newUserId = signUpData.user.id;
+
+      // Upsert profile with mechanic role
+      const { error: profileError } = await supabase.from('profiles').upsert({
+        id: newUserId,
+        email: data.email,
+        name: data.name,
+        role: 'mechanic',
+        avatar_url: data.avatarUrl || null,
+      }, { onConflict: 'id' });
+
+      if (profileError) {
+        toast({ variant: "destructive", title: "Cuenta creada pero error en perfil", description: profileError.message });
+        return;
+      }
+
+      // Insert technician_details
+      await supabase.from('technician_details').upsert({
+        profile_id: newUserId,
+        specialties: data.specialties,
+        hire_date: data.hireDate,
+        contact_phone: data.contact,
+        base_salary: data.baseSalary,
+        extra_hour_rate: data.extraHourRate,
+        extra_hours_this_month: data.extraHoursThisMonth,
+        max_extra_hours: data.maxExtraHours,
+      }, { onConflict: 'profile_id' });
+
+      const newTech: Technician = {
+        id: newUserId,
+        name: data.name,
+        avatarUrl: data.avatarUrl || '',
+        specialties: data.specialties,
+        hireDate: data.hireDate,
+        contact: data.contact,
+        baseSalary: data.baseSalary,
+        extraHourRate: data.extraHourRate,
+        extraHoursThisMonth: data.extraHoursThisMonth,
+        maxExtraHours: data.maxExtraHours,
+      };
+      setTechnicians([...technicians, newTech]);
+      
+      // Show the generated credentials
+      setCreatedCredentials({ name: data.name, email: data.email, password: autoPassword });
     }
     setIsFormOpen(false);
     setSelectedTechnician(null);
   };
+
 
 
   return (
@@ -271,6 +341,52 @@ export default function TechniciansPage() {
       onSubmit={handleFormSubmit}
       technician={selectedTechnician}
     />
+
+    {/* Credentials Dialog — shown after creating a new technician */}
+    <Dialog open={!!createdCredentials} onOpenChange={() => setCreatedCredentials(null)}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <KeyRound className="text-primary" /> ✅ Técnico Creado Exitosamente
+          </DialogTitle>
+          <DialogDescription>
+            Guarda estas credenciales en un lugar seguro. La contraseña NO se podrá recuperar más tarde.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4 my-2">
+          <div className="p-4 rounded-lg bg-muted border space-y-3">
+            <div>
+              <p className="text-xs text-muted-foreground mb-1">Técnico</p>
+              <p className="font-semibold">{createdCredentials?.name}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground mb-1">Email de acceso</p>
+              <p className="font-mono text-sm">{createdCredentials?.email}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground mb-1">Contraseña generada</p>
+              <div className="flex items-center gap-2">
+                <p className="font-mono text-lg font-bold tracking-widest text-primary flex-1">{createdCredentials?.password}</p>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={() => {
+                    navigator.clipboard.writeText(createdCredentials?.password || '');
+                    toast({ title: "Copiado al portapapeles" });
+                  }}
+                >
+                  <Copy className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground">El técnico debe cambiar su contraseña en el primer inicio de sesión.</p>
+        </div>
+        <DialogFooter>
+          <Button onClick={() => setCreatedCredentials(null)}>Entendido, ya la guardé</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
 
     <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
         <AlertDialogContent>

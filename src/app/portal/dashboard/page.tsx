@@ -77,10 +77,10 @@ export default function ClientPortalDashboard() {
             {quotes.length > 0 ? quotes.map(quote => (
               <div key={quote.id} className="flex items-center justify-between p-3 rounded-lg border">
                 <div>
-                  <p className="font-semibold">{quote.quote_number}</p>
+                  <p className="font-semibold">{quote.quote_number || `COT-${quote.id.slice(0,8).toUpperCase()}`}</p>
                   <p className="text-sm text-muted-foreground">Total: ${Number(quote.total).toLocaleString('es-CL')}</p>
                 </div>
-                <Link href={`/portal/dashboard`} passHref>
+                <Link href={`/quote/${quote.id}`} passHref>
                     <Button variant="secondary" size="sm">
                         Revisar y Aprobar <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
@@ -91,6 +91,7 @@ export default function ClientPortalDashboard() {
             )}
           </CardContent>
         </Card>
+
 
         {/* Mis Vehículos Card */}
         <Card>
