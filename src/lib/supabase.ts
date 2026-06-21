@@ -11,11 +11,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
-    detectSessionInUrl: true
+    detectSessionInUrl: true,
+    storageKey: 'lionfix-auth-token',
   },
-  global: {
-    fetch: (url, options) => {
-      return fetch(url, { ...options, cache: 'no-store' });
-    }
-  }
 });
