@@ -52,6 +52,7 @@ import { VehicleFormDialog } from "@/components/vehicle-form-dialog";
 export default function ClientsPage() {
   const [clients, setClients] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [selectedClient, setSelectedClient] = useState<any | null>(null);
   const [isAlertOpen, setIsAlertOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -65,16 +66,26 @@ export default function ClientsPage() {
 
   async function fetchClients() {
     setLoading(true);
-    const { data, error } = await supabase
-      .from("clients")
-      .select("*, vehicles(*)")
-      .order("name");
-    if (!error && data) {
-      setClients(data);
-    } else {
-      console.error("Error fetching clients:", error);
+    setLoadError(null);
+    try {
+      const { data, error } = await supabase
+        .from("clients")
+        .select("*, vehicles(*)")
+        .order("name");
+      if (error) {
+        console.error("Error fetching clients:", JSON.stringify(error));
+        setLoadError(error.message || "Error al consultar la base de datos.");
+      } else if (data) {
+        setClients(data);
+      }
+    } catch (err: any) {
+      const msg = err?.name === 'AbortError'
+        ? 'La conexión tardó demasiado. Supabase puede estar despertando — intenta de nuevo.'
+        : (err?.message || 'Error de conexión inesperado.');
+      setLoadError(msg);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }
 
   const handleDeleteClient = (client: any) => {
@@ -124,6 +135,25 @@ export default function ClientsPage() {
         <main className="flex-1 p-6 space-y-4">
           <Skeleton className="h-10 w-64" />
           <Skeleton className="h-64 w-full" />
+          <p className="text-center text-xs text-muted-foreground animate-pulse">
+            Conectando a la base de datos...
+          </p>
+        </main>
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="flex flex-col h-[calc(100vh-57px)]">
+        <DashboardHeader title="Gestión de Clientes (CRM)" />
+        <main className="flex-1 flex flex-col items-center justify-center gap-4 text-center p-6">
+          <div className="text-4xl">⚠️</div>
+          <h2 className="text-lg font-semibold">No se pudieron cargar los datos</h2>
+          <p className="text-sm text-muted-foreground max-w-md">{loadError}</p>
+          <Button onClick={fetchClients} variant="default">
+            Reintentar
+          </Button>
         </main>
       </div>
     );

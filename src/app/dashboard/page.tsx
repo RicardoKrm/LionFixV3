@@ -33,42 +33,56 @@ export default function DashboardPage() {
   const [dragOverId, setDragOverId] = useState<string | null>(null);
   const orderKey = "dashboard_wo_order";
 
+  const [loadError, setLoadError] = useState<string | null>(null);
+
   useEffect(() => {
     async function fetchData() {
-      const { data, error } = await supabase
-        .from('work_orders')
-        .select(`
-          *,
-          vehicle:vehicles (
-            make,
-            model,
-            license_plate
-          )
-        `)
-        .not('status', 'in', '("Completado","Entregado")');
-        
-      if (!error && data) {
-        // Restore saved order from localStorage
-        try {
-          const savedOrder = JSON.parse(localStorage.getItem(orderKey) || "[]") as string[];
-          if (savedOrder.length > 0) {
-            const ordered = [...data].sort((a, b) => {
-              const ia = savedOrder.indexOf(a.id);
-              const ib = savedOrder.indexOf(b.id);
-              if (ia === -1 && ib === -1) return 0;
-              if (ia === -1) return 1;
-              if (ib === -1) return -1;
-              return ia - ib;
-            });
-            setActiveWorkOrders(ordered);
-          } else {
+      setLoadError(null);
+      try {
+        const { data, error } = await supabase
+          .from('work_orders')
+          .select(`
+            *,
+            vehicle:vehicles (
+              make,
+              model,
+              license_plate
+            )
+          `)
+          .not('status', 'in', '("Completado","Entregado")');
+          
+        if (error) {
+          console.error("Dashboard fetch error:", error);
+          setLoadError(error.message || "Error al cargar los datos.");
+        } else if (data) {
+          // Restore saved order from localStorage
+          try {
+            const savedOrder = JSON.parse(localStorage.getItem(orderKey) || "[]") as string[];
+            if (savedOrder.length > 0) {
+              const ordered = [...data].sort((a, b) => {
+                const ia = savedOrder.indexOf(a.id);
+                const ib = savedOrder.indexOf(b.id);
+                if (ia === -1 && ib === -1) return 0;
+                if (ia === -1) return 1;
+                if (ib === -1) return -1;
+                return ia - ib;
+              });
+              setActiveWorkOrders(ordered);
+            } else {
+              setActiveWorkOrders(data);
+            }
+          } catch {
             setActiveWorkOrders(data);
           }
-        } catch {
-          setActiveWorkOrders(data);
         }
+      } catch (err: any) {
+        const msg = err?.name === 'AbortError'
+          ? 'La conexión tardó demasiado. Supabase puede estar despertando — intenta de nuevo.'
+          : (err?.message || 'Error de conexión inesperado.');
+        setLoadError(msg);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     }
     fetchData();
   }, []);
@@ -171,7 +185,13 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent className="space-y-3">
                  {loading ? (
-                    <div className="text-center text-muted-foreground py-10">Cargando vehículos desde la nube...</div>
+                    <div className="text-center text-muted-foreground py-10 animate-pulse">Cargando vehículos desde la nube...</div>
+                 ) : loadError ? (
+                    <div className="text-center py-10 space-y-4">
+                        <div className="text-4xl">⚠️</div>
+                        <p className="text-muted-foreground max-w-md mx-auto">{loadError}</p>
+                        <Button variant="outline" onClick={() => window.location.reload()}>Reintentar conexión</Button>
+                    </div>
                  ) : activeWorkOrders.length > 0 ? activeWorkOrders.map((wo, index) => {
                     const vehicle = wo.vehicle;
                     if (!vehicle) return null;
