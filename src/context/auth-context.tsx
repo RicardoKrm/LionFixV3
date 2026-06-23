@@ -95,34 +95,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
   }, [fetchProfile]);
 
-  // Tab visibility: when user returns to tab, verify session is still alive
-  useEffect(() => {
-    const handleVisibilityChange = async () => {
-      if (document.visibilityState !== 'visible') return;
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) {
-          setUser(null);
-          return;
-        }
-        // If user state was lost, restore it
-        setUser(prev => {
-          if (prev) return prev;
-          if (session?.user) {
-            fetchProfile(session.user.id, session.user.email!).then(u => {
-              if (u) setUser(u);
-            });
-          }
-          return null;
-        });
-      } catch (e) {
-        // Ignore visibility check errors silently
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [fetchProfile]);
 
   const login = async (email: string, password: string) => {
     setLoading(true);
