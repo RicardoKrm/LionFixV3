@@ -287,6 +287,20 @@ export default function ChecklistsPage() {
       ({ error } = await supabase.from("checklists").insert(payload));
     }
 
+    if (!error && formType === "Entrega" && formWorkOrderId) {
+      // Actualizar estado de la OT a "Entregado"
+      await supabase.from("work_orders").update({ status: 'Entregado' }).eq("id", formWorkOrderId);
+      
+      // Registrar log ISO
+      await supabase.from("iso_logs").insert({
+        event_type: "OT Entregada - Checklist Salida",
+        description: "El vehículo fue entregado y se completó el checklist de salida. Se habilitó encuesta de satisfacción.",
+        reference_id: formWorkOrderId,
+        reference_table: "work_orders",
+        clausula_iso: "8.6 Liberación de los productos y servicios"
+      });
+    }
+
     if (error) {
       toast({ variant: "destructive", title: "Error al guardar", description: error.message });
     } else {

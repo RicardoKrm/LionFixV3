@@ -14,14 +14,17 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight, Car, FileText } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/context/auth-context";
-import { getClientByUserId, getVehicles, getQuotes } from "@/lib/supabase-queries";
+import { getClientByUserId, getVehicles, getQuotes, getWorkOrders } from "@/lib/supabase-queries";
 import { Skeleton } from "@/components/ui/skeleton";
+import { IsoSurveyModal } from "@/components/iso-survey-modal";
 
 export default function ClientPortalDashboard() {
   const { user } = useAuth();
   const [client, setClient] = useState<any>(null);
   const [vehicles, setVehicles] = useState<any[]>([]);
   const [quotes, setQuotes] = useState<any[]>([]);
+  const [pendingSurveys, setPendingSurveys] = useState<any[]>([]);
+  const [activeSurvey, setActiveSurvey] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -31,12 +34,21 @@ export default function ClientPortalDashboard() {
         const clientData = await getClientByUserId(user.uid);
         setClient(clientData);
         if (clientData) {
-          const [vehiclesData, quotesData] = await Promise.all([
+          const [vehiclesData, quotesData, workOrdersData] = await Promise.all([
             getVehicles(clientData.id),
-            getQuotes(clientData.id)
+            getQuotes(clientData.id),
+            getWorkOrders(clientData.id)
           ]);
           setVehicles(vehiclesData || []);
           setQuotes((quotesData || []).filter(q => q.status === 'Enviada'));
+          
+          const surveys = (workOrdersData || []).filter(
+            wo => wo.status === 'Entregado' && wo.satisfaction_rating == null
+          );
+          setPendingSurveys(surveys);
+          if (surveys.length > 0) {
+            setActiveSurvey(surveys[0]);
+          }
         }
       } catch (err) {
         console.error("Error loading portal data:", err);
@@ -64,6 +76,20 @@ export default function ClientPortalDashboard() {
     <div className="p-6 space-y-6">
       <h1 className="text-3xl font-bold text-primary">Bienvenido, {user?.name}</h1>
       <p className="text-muted-foreground">Este es su portal personal. Aquí puede gestionar sus vehículos y cotizaciones.</p>
+
+      {activeSurvey && (
+        <IsoSurveyModal 
+          workOrder={activeSurvey} 
+          onClose={() => setActiveSurvey(null)} 
+          onCompleted={() => {
+            setActiveSurvey(null);
+            setPendingSurveys(prev => prev.filter(s => s.id !== activeSurvey.id));
+            if (pendingSurveys.length > 1) {
+              setTimeout(() => setActiveSurvey(pendingSurveys[1]), 500);
+            }
+          }} 
+        />
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         

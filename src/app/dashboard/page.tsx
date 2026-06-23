@@ -2,14 +2,8 @@
 
 import { useEffect, useState, useRef } from "react";
 import { DashboardHeader } from "@/components/dashboard-header";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Wrench, Car, ListChecks, GripVertical, AlertTriangle, Flame, ArrowDown } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Wrench, Car, ListChecks, GripVertical, AlertTriangle, Flame, ArrowDown, Play, PauseCircle } from "lucide-react";
 import { WorkOrderStatusTracker } from "@/components/work-order-status-tracker";
 import { Progress } from "@/components/ui/progress";
 import Link from "next/link";
@@ -126,6 +120,21 @@ export default function DashboardPage() {
     setDragOverId(null);
   };
 
+  const handleResumeOT = async (otId: string) => {
+    try {
+      const { error } = await supabase
+        .from('work_orders')
+        .update({ status: 'En Reparación' })
+        .eq('id', otId);
+      
+      if (!error) {
+        setActiveWorkOrders(prev => prev.map(wo => wo.id === otId ? { ...wo, status: 'En Reparación' } : wo));
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   const getPriority = (index: number) => {
     if (index === 0) return 1;
     if (index === 1) return 2;
@@ -237,17 +246,32 @@ export default function DashboardPage() {
                            {/* Vehicle Info */}
                            <div className="flex flex-col justify-between">
                                 <div>
-                                    <h3 className="text-lg font-bold text-primary">{vehicle.make} {vehicle.model}</h3>
+                                    <h3 className="text-lg font-bold text-primary flex items-center gap-2">
+                                        {vehicle.make} {vehicle.model}
+                                        {wo.status === 'Pausado' && (
+                                            <Badge variant="destructive" className="animate-pulse flex gap-1 ml-2">
+                                                <PauseCircle className="w-3 h-3" />
+                                                PAUSADO
+                                            </Badge>
+                                        )}
+                                    </h3>
                                     <p className="font-mono text-xl uppercase tracking-wider bg-secondary text-secondary-foreground px-3 py-1 rounded-md text-center inline-block my-2">{vehicle.license_plate}</p>
                                     <p className="text-sm text-muted-foreground">
                                         <span className="font-semibold">Servicio:</span> {wo.service_description}
                                     </p>
                                 </div>
-                                <Button asChild variant="outline" size="sm" className="mt-4 md:mt-2 w-fit">
-                                    <Link href={`/dashboard/work-orders/${wo.id}`}>
-                                        Ver Detalles OT
-                                    </Link>
-                                </Button>
+                                <div className="mt-4 md:mt-2 w-fit flex gap-2">
+                                    <Button asChild variant="outline" size="sm">
+                                        <Link href={`/dashboard/work-orders/${wo.id}`}>
+                                            Ver Detalles OT
+                                        </Link>
+                                    </Button>
+                                    {wo.status === 'Pausado' && (
+                                        <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => handleResumeOT(wo.id)}>
+                                            <Play className="w-4 h-4 mr-2" /> Reanudar
+                                        </Button>
+                                    )}
+                                </div>
                            </div>
                            
                            {/* Status Tracker */}
