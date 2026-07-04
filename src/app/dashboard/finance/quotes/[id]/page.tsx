@@ -28,6 +28,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { getStatusVariant } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PdfQuoteGenerator } from "@/components/pdf-quote-generator";
 
 export default function QuoteDetailPage({
   params,
@@ -56,7 +57,12 @@ export default function QuoteDetailPage({
         console.error("Error fetching quote:", error);
         setQuote(null);
       } else {
-        setQuote(data);
+        const [{ data: itemsData }, { data: workshopData }] = await Promise.all([
+          supabase.from("quote_items").select("*").eq("quote_id", data.id),
+          supabase.from("workshop_settings").select("*").limit(1).single()
+        ]);
+        
+        setQuote({ ...data, quote_items: itemsData || [], workshop: workshopData || {} });
         setStatus(data.status || "Enviada");
       }
       setLoading(false);
@@ -120,7 +126,8 @@ export default function QuoteDetailPage({
   // Extract joined data
   const client = quote.clients as { name: string; email: string; phone: string } | null;
   const vehicle = quote.vehicles as { make: string; model: string; license_plate: string; year: number } | null;
-  const items: any[] = Array.isArray(quote.items) ? quote.items : [];
+  const items: any[] = quote.quote_items || [];
+  const workshop = quote.workshop || {};
 
   const handleApprove = async () => {
     const { error } = await supabase
@@ -328,11 +335,22 @@ export default function QuoteDetailPage({
                 <CardHeader>
                     <CardTitle>Opciones del Documento</CardTitle>
                 </CardHeader>
-                 <CardContent className="flex flex-col gap-3">
-                    <Button variant="outline" onClick={handleSend}><Send className="mr-2 h-4 w-4"/> Marcar como Enviada</Button>
-                    <Button className="w-full bg-[#25D366] hover:bg-[#128C7E]" onClick={handleWhatsApp}><MessageSquare className="mr-2 h-4 w-4"/> Enviar por WhatsApp</Button>
-                    <Button variant="outline" onClick={() => window.print()}><Printer className="mr-2 h-4 w-4"/> Imprimir / PDF</Button>
-                 </CardContent>
+                <CardContent className="space-y-4">
+                  <div className="flex flex-col space-y-2">
+                    <Button className="w-full justify-start" variant="outline" onClick={handleSend} disabled={status !== 'Borrador'}>
+                      <Send className="w-4 h-4 mr-2" />
+                      Marcar como Enviada
+                    </Button>
+                    <Button className="w-full justify-start bg-green-600 hover:bg-green-700 text-white" onClick={handleWhatsApp}>
+                      <MessageSquare className="w-4 h-4 mr-2" />
+                      Enviar por WhatsApp
+                    </Button>
+                  </div>
+
+                  <div className="pt-4 border-t space-y-2">
+                    <PdfQuoteGenerator quote={quote} items={items} workshop={workshop} />
+                  </div>
+                </CardContent>
              </Card>
         </div>
       </main>

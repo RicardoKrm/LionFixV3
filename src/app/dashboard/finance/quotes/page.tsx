@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { DashboardHeader } from "@/components/dashboard-header";
 import {
   Card,
@@ -28,6 +29,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/lib/supabase";
 
 export default function QuotesPage() {
+  const router = useRouter();
   const [quotes, setQuotes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -134,9 +136,9 @@ export default function QuotesPage() {
   return (
     <div className="flex flex-col h-[calc(100vh-57px)]">
       <DashboardHeader title="Gestión de Cotizaciones">
-        <Button onClick={() => setIsFormOpen(true)} variant="secondary">
+        <Button onClick={() => router.push("/dashboard/finance/quotes/new")} className="bg-sky-600 hover:bg-sky-700 text-white">
           <PlusCircle className="mr-2 h-4 w-4" />
-          Nueva Cotización
+          Nuevo Presupuesto Pro
         </Button>
       </DashboardHeader>
       <main className="flex-1 p-6 overflow-y-auto">
