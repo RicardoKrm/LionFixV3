@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useRef, useState } from "react";
 import html2canvas from "html2canvas";
@@ -55,10 +55,8 @@ export function PdfQuoteGenerator({ quote, items, workshop }: PdfQuoteGeneratorP
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
       
-      // If the content is longer than one page, jsPDF can't auto-split well without addPage loop.
-      // For simplicity, we just put it on one continuous page (or let it bleed if it's too long).
       pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
-      pdf.save(`Cotizacion_${quote.quote_number || quote.id.slice(0,8)}.pdf`);
+      pdf.save(`Presupuesto_${quote.quote_number || quote.id.slice(0,8)}.pdf`);
       
       toast({ title: "¡PDF Descargado!", description: "El presupuesto ha sido descargado exitosamente." });
     } catch (e: any) {
@@ -71,26 +69,26 @@ export function PdfQuoteGenerator({ quote, items, workshop }: PdfQuoteGeneratorP
 
   return (
     <>
-      <Button onClick={handleDownloadPdf} disabled={isGenerating} className="bg-amber-500 hover:bg-amber-700 text-white w-full sm:w-auto">
+      <Button onClick={handleDownloadPdf} disabled={isGenerating} className="bg-amber-500 hover:bg-amber-600 text-black font-bold w-full sm:w-auto">
         <Download className="w-4 h-4 mr-2" /> 
-        {isGenerating ? "Generando..." : "Descargar Cotizaci�n"}
+        {isGenerating ? "Generando..." : "Descargar Presupuesto"}
       </Button>
 
-      {/* HIDDEN PRINTABLE TEMPLATE (Aims to mimic the white/blue Pro Quote style) */}
+      {/* HIDDEN PRINTABLE TEMPLATE */}
       <div className="absolute top-[-10000px] left-[-10000px] w-[800px] bg-slate-50 overflow-hidden" ref={printRef} style={{ display: 'none' }}>
         <div className="p-8 font-sans text-slate-800">
           
           {/* HEADER */}
-          <div className="bg-slate-900 text-white p-6 rounded-t-lg flex justify-between items-center mb-6">
+          <div className="bg-black text-white p-6 rounded-t-lg flex justify-between items-center mb-6">
             <div className="flex items-center space-x-4">
               <div className="text-4xl">🚘</div>
               <div>
-                <h1 className="text-2xl font-black tracking-tight">{workshop?.name?.toUpperCase() || 'TALLER MECÁNICO'}</h1>
-                <p className="text-amber-400 text-sm tracking-widest font-semibold uppercase">COTIZACI�N</p>
+                <h1 className="text-2xl font-black tracking-tight text-amber-500">{workshop?.name?.toUpperCase() || 'TALLER MECÁNICO'}</h1>
+                <p className="text-white text-sm tracking-widest font-semibold uppercase">PRESUPUESTO</p>
               </div>
             </div>
             <div className="text-right">
-              <div className="bg-amber-500/20 px-3 py-1 rounded text-amber-400 font-bold mb-2 inline-block">FOLIO: {quote.quote_number || quote.id.slice(0,8)}</div>
+              <div className="bg-amber-500 text-black px-3 py-1 rounded font-bold mb-2 inline-block">FOLIO: {quote.quote_number || quote.id.slice(0,8)}</div>
               <p className="text-xs text-slate-400">FECHA: {new Date(quote.created_at || Date.now()).toLocaleDateString()}</p>
             </div>
           </div>
@@ -128,9 +126,9 @@ export function PdfQuoteGenerator({ quote, items, workshop }: PdfQuoteGeneratorP
           <div className="space-y-4 mb-6">
             {services.length > 0 && (
               <div className="bg-white rounded-lg overflow-hidden border border-slate-200">
-                <div className="bg-slate-900 text-white p-3 flex justify-between items-center">
-                  <span className="font-bold text-sm">1. SERVICIOS Y DIAGNÓSTICOS</span>
-                  <span className="bg-white text-slate-900 px-2 py-0.5 rounded text-xs font-bold">${totalServices.toLocaleString('es-CL')}</span>
+                <div className="bg-black text-white p-3 flex justify-between items-center">
+                  <span className="font-bold text-sm text-amber-500">1. SERVICIOS Y DIAGNÓSTICOS</span>
+                  <span className="bg-amber-500 text-black px-2 py-0.5 rounded text-xs font-bold">${totalServices.toLocaleString('es-CL')}</span>
                 </div>
                 <div className="p-3">
                   {services.map((s, i) => (
@@ -142,9 +140,9 @@ export function PdfQuoteGenerator({ quote, items, workshop }: PdfQuoteGeneratorP
             
             {parts.length > 0 && (
               <div className="bg-white rounded-lg overflow-hidden border border-slate-200">
-                <div className="bg-slate-900 text-white p-3 flex justify-between items-center">
-                  <span className="font-bold text-sm">2. REFACCIONES Y MATERIALES</span>
-                  <span className="bg-white text-slate-900 px-2 py-0.5 rounded text-xs font-bold">${totalParts.toLocaleString('es-CL')}</span>
+                <div className="bg-black text-white p-3 flex justify-between items-center">
+                  <span className="font-bold text-sm text-amber-500">2. REFACCIONES Y MATERIALES</span>
+                  <span className="bg-amber-500 text-black px-2 py-0.5 rounded text-xs font-bold">${totalParts.toLocaleString('es-CL')}</span>
                 </div>
                 <div className="p-3">
                   {parts.map((p, i) => (
@@ -159,9 +157,9 @@ export function PdfQuoteGenerator({ quote, items, workshop }: PdfQuoteGeneratorP
 
             {labor.length > 0 && (
               <div className="bg-white rounded-lg overflow-hidden border border-slate-200">
-                <div className="bg-slate-900 text-white p-3 flex justify-between items-center">
-                  <span className="font-bold text-sm">3. MANO DE OBRA</span>
-                  <span className="bg-white text-slate-900 px-2 py-0.5 rounded text-xs font-bold">${totalLabor.toLocaleString('es-CL')}</span>
+                <div className="bg-black text-white p-3 flex justify-between items-center">
+                  <span className="font-bold text-sm text-amber-500">3. MANO DE OBRA</span>
+                  <span className="bg-amber-500 text-black px-2 py-0.5 rounded text-xs font-bold">${totalLabor.toLocaleString('es-CL')}</span>
                 </div>
                 <div className="p-3">
                   {labor.map((l, i) => (
@@ -182,15 +180,15 @@ export function PdfQuoteGenerator({ quote, items, workshop }: PdfQuoteGeneratorP
             <div className="flex justify-between items-end">
               <div>
                 <p className="text-xs text-slate-500 font-bold mb-1">TOTAL PRESUPUESTO</p>
-                <div className="bg-slate-900 text-white px-4 py-2 rounded-lg text-2xl font-black">${(quote.total || 0).toLocaleString('es-CL')}</div>
+                <div className="bg-black text-white px-4 py-2 rounded-lg text-2xl font-black">${(quote.total || 0).toLocaleString('es-CL')}</div>
               </div>
               <div>
                 <p className="text-xs text-slate-500 font-bold mb-1 text-center">ANTICIPO</p>
                 <div className="bg-slate-100 text-slate-700 px-4 py-2 rounded-lg text-lg font-bold">${(quote.advance_payment || 0).toLocaleString('es-CL')}</div>
               </div>
               <div className="text-right">
-                <p className="text-xs text-amber-500 font-bold mb-1">RESTANTE POR PAGAR</p>
-                <div className="text-3xl font-black text-amber-500">${remaining.toLocaleString('es-CL')}</div>
+                <p className="text-xs text-amber-600 font-bold mb-1">RESTANTE POR PAGAR</p>
+                <div className="text-3xl font-black text-amber-600">${remaining.toLocaleString('es-CL')}</div>
               </div>
             </div>
           </div>
