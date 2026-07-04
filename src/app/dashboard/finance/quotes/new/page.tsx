@@ -14,7 +14,7 @@ import { Trash2, PlusCircle, ArrowLeft, Download, PenTool, Car, User, Wrench, Pa
 import { useToast } from "@/hooks/use-toast";
 import SignatureCanvas from "react-signature-canvas";
 
-export default function NewProQuotePage() {
+export default function NewQuotePage() {
   const router = useRouter();
   const { toast } = useToast();
 
@@ -130,7 +130,7 @@ export default function NewProQuotePage() {
 
   return (
     <div className="flex flex-col h-[calc(100vh-57px)]">
-      <DashboardHeader title="Nueva Cotizaci�n">
+      <DashboardHeader title="Nuevo Presupuesto">
         <Button variant="ghost" onClick={() => router.push("/dashboard/finance/quotes")}>
           <ArrowLeft className="mr-2 h-4 w-4" /> Volver
         </Button>
@@ -140,9 +140,9 @@ export default function NewProQuotePage() {
         <div className="max-w-4xl mx-auto space-y-6">
           
           {/* TALLER */}
-          <Card>
-            <CardHeader className="bg-slate-900 text-white rounded-t-lg py-3 flex flex-row items-center space-x-3">
-              <Briefcase className="w-5 h-5 text-amber-400" />
+          <Card className="border-black">
+            <CardHeader className="bg-black text-white rounded-t-lg py-3 flex flex-row items-center space-x-3 border-b-2 border-amber-500">
+              <Briefcase className="w-5 h-5 text-amber-500" />
               <CardTitle className="text-lg">PERFIL DEL TALLER</CardTitle>
             </CardHeader>
             <CardContent className="p-6 grid grid-cols-2 gap-4">
@@ -167,9 +167,9 @@ export default function NewProQuotePage() {
 
           {/* CLIENTE Y VEHICULO */}
           <div className="grid grid-cols-2 gap-6">
-            <Card>
-              <CardHeader className="bg-slate-900 text-white rounded-t-lg py-3 flex flex-row items-center space-x-3">
-                <User className="w-5 h-5 text-amber-400" />
+            <Card className="border-black">
+              <CardHeader className="bg-black text-white rounded-t-lg py-3 flex flex-row items-center space-x-3 border-b-2 border-amber-500">
+                <User className="w-5 h-5 text-amber-500" />
                 <CardTitle className="text-lg">DATOS DEL CLIENTE</CardTitle>
               </CardHeader>
               <CardContent className="p-6 space-y-4">
@@ -194,9 +194,9 @@ export default function NewProQuotePage() {
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader className="bg-slate-900 text-white rounded-t-lg py-3 flex flex-row items-center space-x-3">
-                <Car className="w-5 h-5 text-amber-400" />
+            <Card className="border-black">
+              <CardHeader className="bg-black text-white rounded-t-lg py-3 flex flex-row items-center space-x-3 border-b-2 border-amber-500">
+                <Car className="w-5 h-5 text-amber-500" />
                 <CardTitle className="text-lg">DATOS DEL VEHÍCULO</CardTitle>
               </CardHeader>
               <CardContent className="p-6 space-y-4">
@@ -222,9 +222,9 @@ export default function NewProQuotePage() {
           </div>
 
           {/* DIAGNOSTICO */}
-          <Card>
-            <CardHeader className="bg-slate-900 text-white rounded-t-lg py-3 flex flex-row items-center space-x-3">
-              <FileText className="w-5 h-5 text-amber-400" />
+          <Card className="border-black">
+            <CardHeader className="bg-black text-white rounded-t-lg py-3 flex flex-row items-center space-x-3 border-b-2 border-amber-500">
+              <FileText className="w-5 h-5 text-amber-500" />
               <CardTitle className="text-lg">DIAGNÓSTICO INICIAL / MOTIVO DE INGRESO</CardTitle>
             </CardHeader>
             <CardContent className="p-6 space-y-4">
@@ -264,13 +264,13 @@ export default function NewProQuotePage() {
           </Card>
 
           {/* SERVICIOS */}
-          <Card>
-            <CardHeader className="bg-slate-900 text-white rounded-t-lg py-3 flex flex-row justify-between items-center">
+          <Card className="border-black">
+            <CardHeader className="bg-black text-white rounded-t-lg py-3 flex flex-row justify-between items-center border-b-2 border-amber-500">
               <div className="flex items-center space-x-3">
-                <CheckCircle className="w-5 h-5 text-amber-400" />
+                <CheckCircle className="w-5 h-5 text-amber-500" />
                 <CardTitle className="text-lg">1. SERVICIOS - PAQUETES Y DIAGNÓSTICOS</CardTitle>
               </div>
-              <div className="bg-white text-black px-4 py-1 rounded font-bold">${totalServices.toLocaleString('es-CL')}</div>
+              <div className="bg-amber-500 text-black px-4 py-1 rounded font-bold">${totalServices.toLocaleString('es-CL')}</div>
             </CardHeader>
             <CardContent className="p-6 space-y-4">
               {services.map((svc, i) => (
@@ -284,18 +284,18 @@ export default function NewProQuotePage() {
                   <Button variant="destructive" size="icon" onClick={() => setServices(services.filter((_, idx) => idx !== i))}><Trash2 className="w-4 h-4"/></Button>
                 </div>
               ))}
-              <Button onClick={() => setServices([...services, { desc: "", price: 0 }])} className="w-full" variant="outline"><PlusCircle className="mr-2 w-4 h-4"/> AGREGAR SERVICIO</Button>
+              <Button onClick={() => setServices([...services, { desc: "", price: 0 }])} className="w-full text-amber-500 border-amber-500 hover:bg-amber-500 hover:text-black" variant="outline"><PlusCircle className="mr-2 w-4 h-4"/> AGREGAR SERVICIO</Button>
             </CardContent>
           </Card>
 
           {/* REFACCIONES */}
-          <Card>
-            <CardHeader className="bg-slate-900 text-white rounded-t-lg py-3 flex flex-row justify-between items-center">
+          <Card className="border-black">
+            <CardHeader className="bg-black text-white rounded-t-lg py-3 flex flex-row justify-between items-center border-b-2 border-amber-500">
               <div className="flex items-center space-x-3">
-                <Package className="w-5 h-5 text-amber-400" />
+                <Package className="w-5 h-5 text-amber-500" />
                 <CardTitle className="text-lg">2. REFACCIONES Y MATERIALES</CardTitle>
               </div>
-              <div className="bg-white text-black px-4 py-1 rounded font-bold">${totalParts.toLocaleString('es-CL')}</div>
+              <div className="bg-amber-500 text-black px-4 py-1 rounded font-bold">${totalParts.toLocaleString('es-CL')}</div>
             </CardHeader>
             <CardContent className="p-6 space-y-4">
               {parts.map((p, i) => (
@@ -313,18 +313,18 @@ export default function NewProQuotePage() {
                   <Button variant="destructive" size="icon" onClick={() => setParts(parts.filter((_, idx) => idx !== i))}><Trash2 className="w-4 h-4"/></Button>
                 </div>
               ))}
-              <Button onClick={() => setParts([...parts, { concept: "", qty: 1, price: 0 }])} className="w-full" variant="outline"><PlusCircle className="mr-2 w-4 h-4"/> AGREGAR REFACCIÓN</Button>
+              <Button onClick={() => setParts([...parts, { concept: "", qty: 1, price: 0 }])} className="w-full text-amber-500 border-amber-500 hover:bg-amber-500 hover:text-black" variant="outline"><PlusCircle className="mr-2 w-4 h-4"/> AGREGAR REFACCIÓN</Button>
             </CardContent>
           </Card>
 
           {/* MANO DE OBRA */}
-          <Card>
-            <CardHeader className="bg-slate-900 text-white rounded-t-lg py-3 flex flex-row justify-between items-center">
+          <Card className="border-black">
+            <CardHeader className="bg-black text-white rounded-t-lg py-3 flex flex-row justify-between items-center border-b-2 border-amber-500">
               <div className="flex items-center space-x-3">
-                <Wrench className="w-5 h-5 text-amber-400" />
+                <Wrench className="w-5 h-5 text-amber-500" />
                 <CardTitle className="text-lg">3. MANO DE OBRA - REPARACIONES</CardTitle>
               </div>
-              <div className="bg-white text-black px-4 py-1 rounded font-bold">${totalLabor.toLocaleString('es-CL')}</div>
+              <div className="bg-amber-500 text-black px-4 py-1 rounded font-bold">${totalLabor.toLocaleString('es-CL')}</div>
             </CardHeader>
             <CardContent className="p-6 space-y-4">
               {labor.map((l, i) => (
@@ -338,14 +338,14 @@ export default function NewProQuotePage() {
                   <Button variant="destructive" size="icon" onClick={() => setLabor(labor.filter((_, idx) => idx !== i))}><Trash2 className="w-4 h-4"/></Button>
                 </div>
               ))}
-              <Button onClick={() => setLabor([...labor, { desc: "", price: 0 }])} className="w-full" variant="outline"><PlusCircle className="mr-2 w-4 h-4"/> AGREGAR MANO DE OBRA</Button>
+              <Button onClick={() => setLabor([...labor, { desc: "", price: 0 }])} className="w-full text-amber-500 border-amber-500 hover:bg-amber-500 hover:text-black" variant="outline"><PlusCircle className="mr-2 w-4 h-4"/> AGREGAR MANO DE OBRA</Button>
             </CardContent>
           </Card>
 
           {/* TERMINOS Y CONDICIONES */}
-          <Card>
-            <CardHeader className="bg-slate-900 text-white rounded-t-lg py-3 flex flex-row items-center space-x-3">
-              <FileText className="w-5 h-5 text-amber-400" />
+          <Card className="border-black">
+            <CardHeader className="bg-black text-white rounded-t-lg py-3 flex flex-row items-center space-x-3 border-b-2 border-amber-500">
+              <FileText className="w-5 h-5 text-amber-500" />
               <CardTitle className="text-lg">4. TÉRMINOS Y CONDICIONES</CardTitle>
             </CardHeader>
             <CardContent className="p-6">
@@ -354,10 +354,10 @@ export default function NewProQuotePage() {
           </Card>
 
           {/* FIRMA */}
-          <Card>
-            <CardHeader className="bg-slate-900 text-white rounded-t-lg py-3 flex flex-row justify-between items-center">
+          <Card className="border-black">
+            <CardHeader className="bg-black text-white rounded-t-lg py-3 flex flex-row justify-between items-center border-b-2 border-amber-500">
               <div className="flex items-center space-x-3">
-                <PenTool className="w-5 h-5 text-amber-400" />
+                <PenTool className="w-5 h-5 text-amber-500" />
                 <CardTitle className="text-lg">5. FIRMA DEL ENCARGADO</CardTitle>
               </div>
               <Button variant="secondary" size="sm" onClick={() => signatureRef.current?.clear()}>Limpiar</Button>
@@ -371,42 +371,42 @@ export default function NewProQuotePage() {
           </Card>
 
           {/* RESUMEN FINANCIERO */}
-          <Card className="border-t-4 border-t-amber-500">
-            <CardHeader className="bg-slate-50 text-slate-900 rounded-t-lg py-3">
-              <CardTitle className="text-xl">RESUMEN FINANCIERO</CardTitle>
+          <Card className="border-t-4 border-t-amber-500 border-x-black border-b-black bg-black text-white">
+            <CardHeader className="bg-black text-white rounded-t-lg py-3">
+              <CardTitle className="text-xl text-amber-500">RESUMEN FINANCIERO</CardTitle>
             </CardHeader>
             <CardContent className="p-6">
               <div className="grid grid-cols-3 gap-6 mb-6">
-                <div className="border rounded p-4 text-center">
-                  <p className="text-xs text-muted-foreground font-bold mb-1">SERVICIOS</p>
+                <div className="border border-slate-800 rounded p-4 text-center">
+                  <p className="text-xs text-amber-500 font-bold mb-1">SERVICIOS</p>
                   <p className="text-2xl font-bold">${totalServices.toLocaleString('es-CL')}</p>
                 </div>
-                <div className="border rounded p-4 text-center">
-                  <p className="text-xs text-muted-foreground font-bold mb-1">REFACCIONES</p>
+                <div className="border border-slate-800 rounded p-4 text-center">
+                  <p className="text-xs text-amber-500 font-bold mb-1">REFACCIONES</p>
                   <p className="text-2xl font-bold">${totalParts.toLocaleString('es-CL')}</p>
                 </div>
-                <div className="border rounded p-4 text-center">
-                  <p className="text-xs text-muted-foreground font-bold mb-1">MANO DE OBRA</p>
+                <div className="border border-slate-800 rounded p-4 text-center">
+                  <p className="text-xs text-amber-500 font-bold mb-1">MANO DE OBRA</p>
                   <p className="text-2xl font-bold">${totalLabor.toLocaleString('es-CL')}</p>
                 </div>
               </div>
-              <div className="bg-slate-900 text-white rounded-lg p-6 flex items-center justify-between">
+              <div className="bg-slate-900 border border-slate-800 text-white rounded-lg p-6 flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-bold opacity-70">TOTAL PRESUPUESTO</p>
-                  <p className="text-4xl font-black">${grandTotal.toLocaleString('es-CL')}</p>
+                  <p className="text-sm font-bold text-slate-400">TOTAL PRESUPUESTO</p>
+                  <p className="text-4xl font-black text-white">${grandTotal.toLocaleString('es-CL')}</p>
                 </div>
                 <div>
-                  <p className="text-sm font-bold opacity-70">ANTICIPO / A CUENTA</p>
-                  <Input type="number" className="bg-slate-800 border-none text-xl w-40 mt-1 h-12" value={advancePayment || ''} onChange={e => setAdvancePayment(Number(e.target.value))} />
+                  <p className="text-sm font-bold text-slate-400">ANTICIPO / A CUENTA</p>
+                  <Input type="number" className="bg-slate-800 border-none text-xl w-40 mt-1 h-12 text-white" value={advancePayment || ''} onChange={e => setAdvancePayment(Number(e.target.value))} />
                 </div>
                 <div className="text-right">
-                  <p className="text-sm font-bold text-amber-400">RESTANTE POR PAGAR</p>
-                  <p className="text-3xl font-black text-amber-400">${remaining.toLocaleString('es-CL')}</p>
+                  <p className="text-sm font-bold text-amber-500">RESTANTE POR PAGAR</p>
+                  <p className="text-3xl font-black text-amber-500">${remaining.toLocaleString('es-CL')}</p>
                 </div>
               </div>
 
               <div className="mt-6">
-                <Button className="w-full h-14 text-lg bg-amber-500 hover:bg-amber-600 text-white" disabled={isSubmitting} onClick={handleSave}>
+                <Button className="w-full h-14 text-lg bg-amber-500 hover:bg-amber-600 text-black font-bold" disabled={isSubmitting} onClick={handleSave}>
                   {isSubmitting ? "Guardando..." : "GUARDAR Y CONTINUAR"}
                 </Button>
               </div>

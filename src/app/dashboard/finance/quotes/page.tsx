@@ -136,9 +136,9 @@ export default function QuotesPage() {
   return (
     <div className="flex flex-col h-[calc(100vh-57px)]">
       <DashboardHeader title="GestiÃ³n de Cotizaciones">
-        <Button onClick={() => router.push("/dashboard/finance/quotes/new")} className="bg-amber-500 hover:bg-amber-600 text-white">
+        <Button onClick={() => router.push("/dashboard/finance/quotes/new")} className="bg-amber-500 hover:bg-amber-600 text-black font-bold">
           <PlusCircle className="mr-2 h-4 w-4" />
-          Nueva Cotización
+          Nuevo Presupuesto
         </Button>
       </DashboardHeader>
       <main className="flex-1 p-6 overflow-y-auto">

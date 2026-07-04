@@ -1,4 +1,4 @@
-"use client";
+Ôªø"use client";
 
 import React, { useRef, useState } from "react";
 import html2canvas from "html2canvas";
@@ -73,7 +73,7 @@ export function PdfQuoteGenerator({ quote, items, workshop }: PdfQuoteGeneratorP
     <>
       <Button onClick={handleDownloadPdf} disabled={isGenerating} className="bg-amber-500 hover:bg-amber-700 text-white w-full sm:w-auto">
         <Download className="w-4 h-4 mr-2" /> 
-        {isGenerating ? "Generando..." : "Descargar CotizaciÛn"}
+        {isGenerating ? "Generando..." : "Descargar CotizaciÔøΩn"}
       </Button>
 
       {/* HIDDEN PRINTABLE TEMPLATE (Aims to mimic the white/blue Pro Quote style) */}
@@ -86,7 +86,7 @@ export function PdfQuoteGenerator({ quote, items, workshop }: PdfQuoteGeneratorP
               <div className="text-4xl">üöò</div>
               <div>
                 <h1 className="text-2xl font-black tracking-tight">{workshop?.name?.toUpperCase() || 'TALLER MEC√ÅNICO'}</h1>
-                <p className="text-amber-400 text-sm tracking-widest font-semibold uppercase">COTIZACI”N</p>
+                <p className="text-amber-400 text-sm tracking-widest font-semibold uppercase">COTIZACIÔøΩN</p>
               </div>
             </div>
             <div className="text-right">
