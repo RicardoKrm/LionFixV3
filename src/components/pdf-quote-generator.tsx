@@ -58,7 +58,7 @@ export function PdfQuoteGenerator({ quote, items, workshop }: PdfQuoteGeneratorP
       // If the content is longer than one page, jsPDF can't auto-split well without addPage loop.
       // For simplicity, we just put it on one continuous page (or let it bleed if it's too long).
       pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
-      pdf.save(`Presupuesto_PRO_${quote.quote_number || quote.id.slice(0,8)}.pdf`);
+      pdf.save(`Cotizacion_${quote.quote_number || quote.id.slice(0,8)}.pdf`);
       
       toast({ title: "¡PDF Descargado!", description: "El presupuesto ha sido descargado exitosamente." });
     } catch (e: any) {
@@ -71,9 +71,9 @@ export function PdfQuoteGenerator({ quote, items, workshop }: PdfQuoteGeneratorP
 
   return (
     <>
-      <Button onClick={handleDownloadPdf} disabled={isGenerating} className="bg-sky-600 hover:bg-sky-700 text-white w-full sm:w-auto">
+      <Button onClick={handleDownloadPdf} disabled={isGenerating} className="bg-amber-500 hover:bg-amber-700 text-white w-full sm:w-auto">
         <Download className="w-4 h-4 mr-2" /> 
-        {isGenerating ? "Generando..." : "Descargar Presupuesto Pro"}
+        {isGenerating ? "Generando..." : "Descargar Cotizaci�n"}
       </Button>
 
       {/* HIDDEN PRINTABLE TEMPLATE (Aims to mimic the white/blue Pro Quote style) */}
@@ -86,24 +86,24 @@ export function PdfQuoteGenerator({ quote, items, workshop }: PdfQuoteGeneratorP
               <div className="text-4xl">🚘</div>
               <div>
                 <h1 className="text-2xl font-black tracking-tight">{workshop?.name?.toUpperCase() || 'TALLER MECÁNICO'}</h1>
-                <p className="text-sky-400 text-sm tracking-widest font-semibold uppercase">PRESUPUESTO PROFESIONAL</p>
+                <p className="text-amber-400 text-sm tracking-widest font-semibold uppercase">COTIZACI�N</p>
               </div>
             </div>
             <div className="text-right">
-              <div className="bg-sky-500/20 px-3 py-1 rounded text-sky-400 font-bold mb-2 inline-block">FOLIO: {quote.quote_number || quote.id.slice(0,8)}</div>
+              <div className="bg-amber-500/20 px-3 py-1 rounded text-amber-400 font-bold mb-2 inline-block">FOLIO: {quote.quote_number || quote.id.slice(0,8)}</div>
               <p className="text-xs text-slate-400">FECHA: {new Date(quote.created_at || Date.now()).toLocaleDateString()}</p>
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4 mb-6">
             <div className="bg-white rounded-lg p-4 shadow-sm border border-slate-200">
-              <h2 className="text-sm font-bold text-slate-900 mb-3 flex items-center"><span className="bg-sky-100 text-sky-700 p-1 rounded mr-2">👤</span> CLIENTE</h2>
+              <h2 className="text-sm font-bold text-slate-900 mb-3 flex items-center"><span className="bg-amber-100 text-amber-700 p-1 rounded mr-2">👤</span> CLIENTE</h2>
               <p className="font-bold text-lg">{client.name}</p>
               <p className="text-sm text-slate-500 mt-1">Tel: {client.phone}</p>
               <p className="text-sm text-slate-500">Email: {client.email}</p>
             </div>
             <div className="bg-white rounded-lg p-4 shadow-sm border border-slate-200">
-              <h2 className="text-sm font-bold text-slate-900 mb-3 flex items-center"><span className="bg-sky-100 text-sky-700 p-1 rounded mr-2">🚗</span> VEHÍCULO</h2>
+              <h2 className="text-sm font-bold text-slate-900 mb-3 flex items-center"><span className="bg-amber-100 text-amber-700 p-1 rounded mr-2">🚗</span> VEHÍCULO</h2>
               <p className="font-bold text-lg">{vehicle.make} {vehicle.model} - {vehicle.year}</p>
               <p className="text-sm text-slate-500 mt-1">Placas: {vehicle.license_plate}</p>
             </div>
@@ -173,7 +173,7 @@ export function PdfQuoteGenerator({ quote, items, workshop }: PdfQuoteGeneratorP
           </div>
 
           {/* FINANCIAL SUMMARY */}
-          <div className="bg-white rounded-lg p-6 shadow-sm border-t-4 border-t-sky-500 mb-6">
+          <div className="bg-white rounded-lg p-6 shadow-sm border-t-4 border-t-amber-500 mb-6">
             <div className="grid grid-cols-3 text-center mb-6 border-b pb-4">
               <div><p className="text-xs text-slate-500 font-bold">SERVICIOS</p><p className="font-bold">${totalServices.toLocaleString('es-CL')}</p></div>
               <div><p className="text-xs text-slate-500 font-bold">REFACCIONES</p><p className="font-bold">${totalParts.toLocaleString('es-CL')}</p></div>
@@ -189,8 +189,8 @@ export function PdfQuoteGenerator({ quote, items, workshop }: PdfQuoteGeneratorP
                 <div className="bg-slate-100 text-slate-700 px-4 py-2 rounded-lg text-lg font-bold">${(quote.advance_payment || 0).toLocaleString('es-CL')}</div>
               </div>
               <div className="text-right">
-                <p className="text-xs text-sky-600 font-bold mb-1">RESTANTE POR PAGAR</p>
-                <div className="text-3xl font-black text-sky-600">${remaining.toLocaleString('es-CL')}</div>
+                <p className="text-xs text-amber-500 font-bold mb-1">RESTANTE POR PAGAR</p>
+                <div className="text-3xl font-black text-amber-500">${remaining.toLocaleString('es-CL')}</div>
               </div>
             </div>
           </div>

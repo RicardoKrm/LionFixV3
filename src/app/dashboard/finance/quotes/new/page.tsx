@@ -83,7 +83,7 @@ export default function NewProQuotePage() {
       // 1. Generate Quote Number
       const year = new Date().getFullYear();
       const { count } = await supabase.from("quotes").select("*", { count: "exact", head: true });
-      const quoteNumber = `PRO-${year}-${String((count || 0) + 1).padStart(3, "0")}`;
+      const quoteNumber = `COT-${year}-${String((count || 0) + 1).padStart(3, "0")}`;
 
       const signatureData = signatureRef.current?.isEmpty() ? null : signatureRef.current?.toDataURL();
 
@@ -130,7 +130,7 @@ export default function NewProQuotePage() {
 
   return (
     <div className="flex flex-col h-[calc(100vh-57px)]">
-      <DashboardHeader title="Nuevo Presupuesto Pro">
+      <DashboardHeader title="Nueva Cotizaci�n">
         <Button variant="ghost" onClick={() => router.push("/dashboard/finance/quotes")}>
           <ArrowLeft className="mr-2 h-4 w-4" /> Volver
         </Button>
@@ -142,8 +142,8 @@ export default function NewProQuotePage() {
           {/* TALLER */}
           <Card>
             <CardHeader className="bg-slate-900 text-white rounded-t-lg py-3 flex flex-row items-center space-x-3">
-              <Briefcase className="w-5 h-5 text-sky-400" />
-              <CardTitle className="text-lg">PERFIL PROFESIONAL DEL TALLER</CardTitle>
+              <Briefcase className="w-5 h-5 text-amber-400" />
+              <CardTitle className="text-lg">PERFIL DEL TALLER</CardTitle>
             </CardHeader>
             <CardContent className="p-6 grid grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -169,7 +169,7 @@ export default function NewProQuotePage() {
           <div className="grid grid-cols-2 gap-6">
             <Card>
               <CardHeader className="bg-slate-900 text-white rounded-t-lg py-3 flex flex-row items-center space-x-3">
-                <User className="w-5 h-5 text-sky-400" />
+                <User className="w-5 h-5 text-amber-400" />
                 <CardTitle className="text-lg">DATOS DEL CLIENTE</CardTitle>
               </CardHeader>
               <CardContent className="p-6 space-y-4">
@@ -196,7 +196,7 @@ export default function NewProQuotePage() {
 
             <Card>
               <CardHeader className="bg-slate-900 text-white rounded-t-lg py-3 flex flex-row items-center space-x-3">
-                <Car className="w-5 h-5 text-sky-400" />
+                <Car className="w-5 h-5 text-amber-400" />
                 <CardTitle className="text-lg">DATOS DEL VEHÍCULO</CardTitle>
               </CardHeader>
               <CardContent className="p-6 space-y-4">
@@ -224,7 +224,7 @@ export default function NewProQuotePage() {
           {/* DIAGNOSTICO */}
           <Card>
             <CardHeader className="bg-slate-900 text-white rounded-t-lg py-3 flex flex-row items-center space-x-3">
-              <FileText className="w-5 h-5 text-sky-400" />
+              <FileText className="w-5 h-5 text-amber-400" />
               <CardTitle className="text-lg">DIAGNÓSTICO INICIAL / MOTIVO DE INGRESO</CardTitle>
             </CardHeader>
             <CardContent className="p-6 space-y-4">
@@ -267,7 +267,7 @@ export default function NewProQuotePage() {
           <Card>
             <CardHeader className="bg-slate-900 text-white rounded-t-lg py-3 flex flex-row justify-between items-center">
               <div className="flex items-center space-x-3">
-                <CheckCircle className="w-5 h-5 text-sky-400" />
+                <CheckCircle className="w-5 h-5 text-amber-400" />
                 <CardTitle className="text-lg">1. SERVICIOS - PAQUETES Y DIAGNÓSTICOS</CardTitle>
               </div>
               <div className="bg-white text-black px-4 py-1 rounded font-bold">${totalServices.toLocaleString('es-CL')}</div>
@@ -292,7 +292,7 @@ export default function NewProQuotePage() {
           <Card>
             <CardHeader className="bg-slate-900 text-white rounded-t-lg py-3 flex flex-row justify-between items-center">
               <div className="flex items-center space-x-3">
-                <Package className="w-5 h-5 text-sky-400" />
+                <Package className="w-5 h-5 text-amber-400" />
                 <CardTitle className="text-lg">2. REFACCIONES Y MATERIALES</CardTitle>
               </div>
               <div className="bg-white text-black px-4 py-1 rounded font-bold">${totalParts.toLocaleString('es-CL')}</div>
@@ -321,7 +321,7 @@ export default function NewProQuotePage() {
           <Card>
             <CardHeader className="bg-slate-900 text-white rounded-t-lg py-3 flex flex-row justify-between items-center">
               <div className="flex items-center space-x-3">
-                <Wrench className="w-5 h-5 text-sky-400" />
+                <Wrench className="w-5 h-5 text-amber-400" />
                 <CardTitle className="text-lg">3. MANO DE OBRA - REPARACIONES</CardTitle>
               </div>
               <div className="bg-white text-black px-4 py-1 rounded font-bold">${totalLabor.toLocaleString('es-CL')}</div>
@@ -345,7 +345,7 @@ export default function NewProQuotePage() {
           {/* TERMINOS Y CONDICIONES */}
           <Card>
             <CardHeader className="bg-slate-900 text-white rounded-t-lg py-3 flex flex-row items-center space-x-3">
-              <FileText className="w-5 h-5 text-sky-400" />
+              <FileText className="w-5 h-5 text-amber-400" />
               <CardTitle className="text-lg">4. TÉRMINOS Y CONDICIONES</CardTitle>
             </CardHeader>
             <CardContent className="p-6">
@@ -357,7 +357,7 @@ export default function NewProQuotePage() {
           <Card>
             <CardHeader className="bg-slate-900 text-white rounded-t-lg py-3 flex flex-row justify-between items-center">
               <div className="flex items-center space-x-3">
-                <PenTool className="w-5 h-5 text-sky-400" />
+                <PenTool className="w-5 h-5 text-amber-400" />
                 <CardTitle className="text-lg">5. FIRMA DEL ENCARGADO</CardTitle>
               </div>
               <Button variant="secondary" size="sm" onClick={() => signatureRef.current?.clear()}>Limpiar</Button>
@@ -371,7 +371,7 @@ export default function NewProQuotePage() {
           </Card>
 
           {/* RESUMEN FINANCIERO */}
-          <Card className="border-t-4 border-t-sky-500">
+          <Card className="border-t-4 border-t-amber-500">
             <CardHeader className="bg-slate-50 text-slate-900 rounded-t-lg py-3">
               <CardTitle className="text-xl">RESUMEN FINANCIERO</CardTitle>
             </CardHeader>
@@ -400,13 +400,13 @@ export default function NewProQuotePage() {
                   <Input type="number" className="bg-slate-800 border-none text-xl w-40 mt-1 h-12" value={advancePayment || ''} onChange={e => setAdvancePayment(Number(e.target.value))} />
                 </div>
                 <div className="text-right">
-                  <p className="text-sm font-bold text-sky-400">RESTANTE POR PAGAR</p>
-                  <p className="text-3xl font-black text-sky-400">${remaining.toLocaleString('es-CL')}</p>
+                  <p className="text-sm font-bold text-amber-400">RESTANTE POR PAGAR</p>
+                  <p className="text-3xl font-black text-amber-400">${remaining.toLocaleString('es-CL')}</p>
                 </div>
               </div>
 
               <div className="mt-6">
-                <Button className="w-full h-14 text-lg bg-sky-600 hover:bg-sky-700 text-white" disabled={isSubmitting} onClick={handleSave}>
+                <Button className="w-full h-14 text-lg bg-amber-500 hover:bg-amber-600 text-white" disabled={isSubmitting} onClick={handleSave}>
                   {isSubmitting ? "Guardando..." : "GUARDAR Y CONTINUAR"}
                 </Button>
               </div>
