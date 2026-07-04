@@ -10,12 +10,14 @@ if (!supabaseUrl || !supabaseAnonKey) {
 // Global safe fetch to prevent Uncaught Promise Rejections when DB sleeps or network fails
 const safeFetchWithTimeout = async (url: RequestInfo | URL, options?: RequestInit) => {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 15000); // 15s timeout
+  const timer = setTimeout(() => controller.abort(), 10000); // 10s timeout
   
-  const finalSignal = options?.signal || controller.signal;
+  if (options?.signal) {
+    options.signal.addEventListener('abort', () => controller.abort());
+  }
   
   try {
-    const response = await fetch(url, { ...options, signal: finalSignal });
+    const response = await fetch(url, { ...options, signal: controller.signal });
     return response;
   } catch (error: any) {
     console.warn("Supabase network error caught:", error.message);

@@ -74,24 +74,29 @@ export default function InventoryPage() {
 
   async function fetchInventory() {
     setLoading(true);
-    const { data, error } = await supabase.from("parts").select("*").order("sku");
-    if (!error && data) {
-      // Mapeamos snake_case de la DB a camelCase del tipo Part
-      const mapped = data.map((p: any) => ({
-        sku: p.sku,
-        name: p.name,
-        stock: p.stock,
-        alertThreshold: p.alert_threshold,
-        location: p.location,
-        cost: p.cost,
-        price: p.price,
-        supplier: p.supplier,
-      })) as Part[];
-      setInventory(mapped);
-    } else {
-      console.error("Error fetching inventory:", error);
+    try {
+      const { data, error } = await supabase.from("parts").select("*").order("sku");
+      if (!error && data) {
+        // Mapeamos snake_case de la DB a camelCase del tipo Part
+        const mapped = data.map((p: any) => ({
+          sku: p.sku,
+          name: p.name,
+          stock: p.stock,
+          alertThreshold: p.alert_threshold,
+          location: p.location,
+          cost: p.cost,
+          price: p.price,
+          supplier: p.supplier,
+        })) as Part[];
+        setInventory(mapped);
+      } else {
+        console.error("Error fetching inventory:", error);
+      }
+    } catch (e: any) {
+      console.error("Unexpected error in fetchInventory:", e.message);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }
 
   const handleNewPart = () => {
