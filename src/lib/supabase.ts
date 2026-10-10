@@ -10,23 +10,25 @@ if (!supabaseUrl || !supabaseAnonKey) {
 // Global safe fetch to prevent Uncaught Promise Rejections when DB sleeps or network fails
 const safeFetchWithTimeout = async (url: RequestInfo | URL, options?: RequestInit) => {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 10000); // 10s timeout
-  
+  const timer = setTimeout(() => controller.abort(), 15000); // 15s timeout
+
   if (options?.signal) {
     options.signal.addEventListener('abort', () => controller.abort());
   }
-  
+
   try {
     const response = await fetch(url, { ...options, signal: controller.signal });
     return response;
   } catch (error: any) {
     console.warn("Supabase network error caught:", error.message);
-    // Return a fake Response that gotrue/postgrest can parse as an error instead of crashing
-    return new Response(JSON.stringify({ 
-      error: "network_error", 
-      message: error.message || 'Error de conexión con la base de datos' 
+    // IMPORTANT: Must return status 503 (5xx range) so @supabase/auth-js treats it as
+    // AuthRetryableFetchError and preserves the user session when tab wakes from background/minimize.
+    // Returning 400 caused GoTrue to think the refresh_token was invalid and sign out the user.
+    return new Response(JSON.stringify({
+      error: "network_error",
+      message: error.message || 'Error temporal de conexión con la base de datos'
     }), {
-      status: 400,
+      status: 503,
       headers: { 'Content-Type': 'application/json' }
     });
   } finally {

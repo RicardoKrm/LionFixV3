@@ -1,9 +1,11 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import type { User, UserRole } from '@/types';
 import { supabase } from '@/lib/supabase';
+
+const USER_CACHE_KEY = 'lionfix_user_profile_cache';
 
 interface AuthContextType {
   user: User | null;
@@ -18,9 +20,33 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const currentUserIdRef = useRef<string | null>(null);
   const router = useRouter();
 
-  const fetchProfile = useCallback(async (userId: string, email: string): Promise<User | null> => {
+  const updateUserState = useCallback((newUser: User | null) => {
+    currentUserIdRef.current = newUser?.uid ?? null;
+    setUser(newUser);
+    try {
+      if (newUser) {
+        localStorage.setItem(USER_CACHE_KEY, JSON.stringify(newUser));
+      } else {
+        localStorage.removeItem(USER_CACHE_KEY);
+      }
+    } catch {
+      // Ignore storage errors
+    }
+  }, []);
+
+  const fetchProfile = useCallback(async (userId: string, email: string): Promise<User> => {
+    const isAdminEmail = email.toLowerCase().includes('admin');
+    const fallbackUser: User = {
+      uid: userId,
+      email: email,
+      name: isAdminEmail ? 'Administrador' : email.split('@')[0],
+      role: (isAdminEmail ? 'admin' : 'mechanic') as UserRole,
+      avatarUrl: 'https://placehold.co/100x100.png',
+    };
+
     try {
       const { data: profile } = await supabase
         .from('profiles')
@@ -29,47 +55,51 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         .single();
 
       if (!profile) {
-        // Fallback seguro: si RLS o la base de datos no devuelven perfil, inferir rol para no bloquear al usuario
-        const isAdmin = email.toLowerCase().includes('admin');
-        return {
-          uid: userId,
-          email: email,
-          name: isAdmin ? 'Administrador' : email.split('@')[0],
-          role: (isAdmin ? 'admin' : 'mechanic') as UserRole,
-          avatarUrl: 'https://placehold.co/100x100.png',
-        };
+        return fallbackUser;
       }
 
       return {
         uid: userId,
         email: email,
-        name: profile.name || (email.toLowerCase().includes('admin') ? 'Administrador' : email.split('@')[0]),
-        role: (profile.role || (email.toLowerCase().includes('admin') ? 'admin' : 'mechanic')) as UserRole,
-        avatarUrl: profile.avatar_url || 'https://placehold.co/100x100.png',
+        name: profile.name || fallbackUser.name,
+        role: (profile.role || fallbackUser.role) as UserRole,
+        avatarUrl: profile.avatar_url || fallbackUser.avatarUrl,
       };
     } catch (e) {
       console.error('fetchProfile failed, using fallback:', e);
-      const isAdmin = email.toLowerCase().includes('admin');
-      return {
-        uid: userId,
-        email: email,
-        name: isAdmin ? 'Administrador' : email.split('@')[0],
-        role: (isAdmin ? 'admin' : 'mechanic') as UserRole,
-        avatarUrl: 'https://placehold.co/100x100.png',
-      };
+      return fallbackUser;
     }
   }, []);
 
   useEffect(() => {
     let mounted = true;
 
-    // 1. Try to restore session from localStorage immediately
+    // 0. Restore cached user immediately to avoid loading flicker
+    try {
+      const cached = localStorage.getItem(USER_CACHE_KEY);
+      if (cached) {
+        const parsed = JSON.parse(cached) as User;
+        if (parsed?.uid) {
+          currentUserIdRef.current = parsed.uid;
+          setUser(parsed);
+          setLoading(false);
+        }
+      }
+    } catch {
+      // Ignore parse errors
+    }
+
+    // 1. Verify session from Supabase
     const initialize = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user && mounted) {
-          const fullUser = await fetchProfile(session.user.id, session.user.email!);
-          if (fullUser && mounted) setUser(fullUser);
+          if (currentUserIdRef.current !== session.user.id) {
+            const fullUser = await fetchProfile(session.user.id, session.user.email || '');
+            if (mounted) updateUserState(fullUser);
+          }
+        } else if (!session && mounted) {
+          updateUserState(null);
         }
       } catch (e) {
         console.error('Session initialization failed:', e);
@@ -81,26 +111,32 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     initialize();
 
     // 2. Listen for auth events
-    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+    // CRITICAL: Callback MUST NOT be async! Calling supabase.from() directly inside an async
+    // onAuthStateChange callback causes a deadlock in GoTrueClient when the browser tab regains focus.
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
       if (!mounted) return;
 
-      if (event === 'SIGNED_IN' && session?.user) {
-        const fullUser = await fetchProfile(session.user.id, session.user.email!);
-        if (fullUser && mounted) setUser(fullUser);
-        if (mounted) setLoading(false);
-      } else if (event === 'TOKEN_REFRESHED' && session?.user) {
-        // Token was refreshed in background - restore user if lost
-        setUser(prev => {
-          if (prev) return prev; // Already have user, no need to re-fetch
-          // User was lost - fetch it (async, then update)
-          fetchProfile(session.user.id, session.user.email!).then(u => {
-            if (u && mounted) setUser(u);
-          });
-          return null;
-        });
+      if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') && session?.user) {
+        // If we already have this exact user loaded, do nothing when returning from minimize/tab switch!
+        if (currentUserIdRef.current === session.user.id) {
+          setLoading(false);
+          return;
+        }
+
+        // Defer profile fetch outside the internal GoTrue lock tick to prevent deadlocks
+        const userId = session.user.id;
+        const userEmail = session.user.email || '';
+        setTimeout(async () => {
+          if (!mounted) return;
+          const fullUser = await fetchProfile(userId, userEmail);
+          if (mounted) {
+            updateUserState(fullUser);
+            setLoading(false);
+          }
+        }, 0);
       } else if (event === 'SIGNED_OUT') {
         if (mounted) {
-          setUser(null);
+          updateUserState(null);
           setLoading(false);
         }
       }
@@ -110,8 +146,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       mounted = false;
       authListener.subscription.unsubscribe();
     };
-  }, [fetchProfile]);
-
+  }, [fetchProfile, updateUserState]);
 
   const login = async (email: string, password: string) => {
     setLoading(true);
@@ -120,17 +155,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (error) throw new Error(error.message);
 
       if (data.session?.user) {
-        const fullUser = await fetchProfile(data.session.user.id, data.session.user.email!);
-        if (fullUser) {
-          setUser(fullUser);
-          switch (fullUser.role) {
-            case 'admin':    router.push('/dashboard'); break;
-            case 'mechanic': router.push('/mechanic/dashboard'); break;
-            case 'client':   router.push('/portal/dashboard'); break;
-            default:         router.push('/login');
-          }
-        } else {
-          throw new Error('Credenciales válidas, pero no se encontró un perfil asignado a este usuario.');
+        const fullUser = await fetchProfile(data.session.user.id, data.session.user.email || email);
+        updateUserState(fullUser);
+        switch (fullUser.role) {
+          case 'admin':    router.push('/dashboard'); break;
+          case 'mechanic': router.push('/mechanic/dashboard'); break;
+          case 'client':   router.push('/portal/dashboard'); break;
+          default:         router.push('/dashboard');
         }
       }
     } finally {
@@ -153,7 +184,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } catch (e) {
       console.error('Logout error:', e);
     } finally {
-      setUser(null);
+      updateUserState(null);
       router.push('/');
     }
   };
