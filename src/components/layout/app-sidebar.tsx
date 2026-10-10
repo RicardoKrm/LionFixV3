@@ -1,5 +1,3 @@
-
-
 "use client";
 
 import {
@@ -17,33 +15,18 @@ import {
   Home,
   Wrench,
   Calendar,
-  Settings,
-  UserCircle,
-  Car,
   ClipboardCheck,
-  ShieldCheck,
   Users,
   Package,
-  LineChart,
   FileDigit,
   BarChart,
-  Briefcase,
-  BookCheck,
-  ChevronDown,
-  FileText,
-  Send,
-  History,
-  HardHat,
   UserSquare,
-  Blocks,
-  Clock,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Image from "next/image";
 import { useAuth } from "@/context/auth-context";
-import { useRouter } from "next/navigation";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -58,12 +41,9 @@ import {
 
 export function AppSidebar() {
   const pathname = usePathname();
-  const router = useRouter();
   const { logout, user } = useAuth();
 
   const isActive = (path: string) => {
-    // Para las rutas con sub-rutas dinámicas como /contracts/[id],
-    // queremos que el item principal se mantenga activo.
     return pathname === path || pathname.startsWith(`${path}/`);
   };
 
@@ -85,7 +65,7 @@ export function AppSidebar() {
       <SidebarContent className="p-4">
         <SidebarMenu>
           <SidebarMenuItem>
-             <span className="px-2 text-xs font-medium text-sidebar-foreground/70">VISTA ADMINISTRADOR</span>
+             <span className="px-2 text-xs font-semibold tracking-wider text-sidebar-foreground/60">TALLER & OPERACIONES</span>
           </SidebarMenuItem>
           <SidebarMenuItem>
             <Link href="/dashboard" passHref>
@@ -113,43 +93,10 @@ export function AppSidebar() {
             <Link href="/dashboard/management/checklists" passHref>
               <SidebarMenuButton
                 isActive={isActive("/dashboard/management/checklists")}
-                tooltip="Checklists"
+                tooltip="Checklists de Recepción"
               >
                 <ClipboardCheck />
                 <span>Checklists</span>
-              </SidebarMenuButton>
-            </Link>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
-            <Link href="/dashboard/calendar" passHref>
-              <SidebarMenuButton
-                isActive={isActive("/dashboard/calendar")}
-                tooltip="Calendario"
-              >
-                <Calendar />
-                <span>Calendario</span>
-              </SidebarMenuButton>
-            </Link>
-          </SidebarMenuItem>
-           <SidebarMenuItem>
-            <Link href="/dashboard/clients" passHref>
-              <SidebarMenuButton
-                isActive={isActive("/dashboard/clients")}
-                tooltip="Clientes"
-              >
-                <Users />
-                <span>Clientes</span>
-              </SidebarMenuButton>
-            </Link>
-          </SidebarMenuItem>
-           <SidebarMenuItem>
-            <Link href="/dashboard/inventory" passHref>
-              <SidebarMenuButton
-                isActive={isActive("/dashboard/inventory")}
-                tooltip="Inventario"
-              >
-                <Package />
-                <span>Inventario</span>
               </SidebarMenuButton>
             </Link>
           </SidebarMenuItem>
@@ -164,110 +111,68 @@ export function AppSidebar() {
               </SidebarMenuButton>
             </Link>
           </SidebarMenuItem>
-           <SidebarMenuItem>
-            <Link href="/dashboard/finance/reports" passHref>
+          <SidebarMenuItem>
+            <Link href="/dashboard/calendar" passHref>
               <SidebarMenuButton
-                isActive={isActive("/dashboard/finance/reports")}
-                tooltip="Reportes y KPIs"
+                isActive={isActive("/dashboard/calendar")}
+                tooltip="Calendario de Citas"
               >
-                <BarChart />
-                <span>Reportes y KPIs</span>
+                <Calendar />
+                <span>Calendario</span>
               </SidebarMenuButton>
             </Link>
           </SidebarMenuItem>
           <SidebarMenuItem>
-            <Link href="/dashboard/management/contracts" passHref>
+            <Link href="/dashboard/clients" passHref>
               <SidebarMenuButton
-                isActive={isActive("/dashboard/management/contracts")}
-                tooltip="Contratos de Flota"
+                isActive={isActive("/dashboard/clients")}
+                tooltip="Clientes y Vehículos"
               >
-                <Briefcase />
-                <span>Contratos de Flota</span>
+                <Users />
+                <span>Clientes</span>
               </SidebarMenuButton>
             </Link>
           </SidebarMenuItem>
-           <SidebarMenuItem>
-            <Link href="/dashboard/management/technicians" passHref>
+          <SidebarMenuItem>
+            <Link href="/dashboard/inventory" passHref>
               <SidebarMenuButton
-                isActive={isActive("/dashboard/management/technicians")}
-                tooltip="Gestión de Técnicos"
+                isActive={isActive("/dashboard/inventory")}
+                tooltip="Inventario de Repuestos"
               >
-                <UserSquare />
-                <span>Técnicos</span>
+                <Package />
+                <span>Inventario</span>
               </SidebarMenuButton>
             </Link>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <Link href="/dashboard/finance/reports" passHref>
+              <SidebarMenuButton
+                isActive={isActive("/dashboard/finance/reports")}
+                tooltip="Reportes y Métricas"
+              >
+                <BarChart />
+                <span>Reportes</span>
+              </SidebarMenuButton>
+            </Link>
+          </SidebarMenuItem>
+
+          <SidebarSeparator className="my-2" />
+
+          <SidebarMenuItem>
+             <span className="px-2 text-xs font-semibold tracking-wider text-sidebar-foreground/60">SISTEMA</span>
           </SidebarMenuItem>
           <SidebarMenuItem>
             <Link href="/dashboard/management/users" passHref>
               <SidebarMenuButton
                 isActive={isActive("/dashboard/management/users")}
-                tooltip="Gestión de Usuarios"
+                tooltip="Gestión de Personal"
               >
-                <Users />
-                <span>Gestión de Usuarios</span>
-              </SidebarMenuButton>
-            </Link>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
-            <Link href="/dashboard/management/attendance" passHref>
-              <SidebarMenuButton
-                isActive={isActive("/dashboard/management/attendance")}
-                tooltip="Control de Asistencia"
-              >
-                <Clock />
-                <span>Control de Asistencia</span>
-              </SidebarMenuButton>
-            </Link>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
-            <Link href="/dashboard/management/iso9001" passHref>
-              <SidebarMenuButton
-                isActive={isActive("/dashboard/management/iso9001")}
-                tooltip="Norma ISO 9001"
-              >
-                <ShieldCheck />
-                <span>Norma ISO 9001</span>
-              </SidebarMenuButton>
-            </Link>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
-            <Link href="/dashboard/reminders" passHref>
-              <SidebarMenuButton
-                isActive={isActive("/dashboard/reminders")}
-                tooltip="Recordatorios IA"
-              >
-                <Send />
-                <span>Recordatorios IA</span>
-              </SidebarMenuButton>
-            </Link>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
-            <Link href="/dashboard/settings/maintenance-plans" passHref>
-              <SidebarMenuButton
-                isActive={isActive("/dashboard/settings/maintenance-plans")}
-                tooltip="Planes de Mantenimiento"
-              >
-                <BookCheck />
-                <span>Planes de Mantenimiento</span>
-              </SidebarMenuButton>
-            </Link>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
-            <Link href="/dashboard/integrations" passHref>
-              <SidebarMenuButton
-                isActive={isActive("/dashboard/integrations")}
-                tooltip="Integraciones"
-              >
-                <Blocks />
-                <span>Integraciones</span>
+                <UserSquare />
+                <span>Personal & Usuarios</span>
               </SidebarMenuButton>
             </Link>
           </SidebarMenuItem>
         </SidebarMenu>
-        
-        {/* Extra views removed */}
-
-
       </SidebarContent>
       <SidebarFooter className="border-t border-sidebar-border p-4">
         <SidebarMenu>
@@ -278,10 +183,10 @@ export function AppSidebar() {
                    <div className="flex items-center gap-2">
                      <Avatar className="h-8 w-8">
                          <AvatarImage src="https://placehold.co/100x100.png" alt="Usuario" />
-                         <AvatarFallback>{user?.name?.substring(0,2).toUpperCase() || 'JP'}</AvatarFallback>
+                         <AvatarFallback>{user?.name?.substring(0,2).toUpperCase() || 'AD'}</AvatarFallback>
                      </Avatar>
                      <div className="flex flex-col text-left">
-                         <span className="text-sm font-medium text-sidebar-foreground">{user?.name || 'Juan Pérez'}</span>
+                         <span className="text-sm font-medium text-sidebar-foreground">{user?.name || 'Administrador'}</span>
                          <span className="text-xs text-sidebar-foreground/70">{user?.role || 'Admin'}</span>
                      </div>
                    </div>
