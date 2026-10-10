@@ -224,6 +224,39 @@ export default function ManualsPage() {
     });
   };
 
+  // Abre HaynesPro en una VENTANA NUEVA independiente del navegador (nueva sesión visual, no una pestaña)
+  const openHaynesInNewBrowserWindow = (customUrl?: string) => {
+    const raw = (customUrl || haynesProUrl || "https://www.workshopdata.com/touch/site/layout/login").trim();
+    const targetUrl = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
+    const finalTarget =
+      targetUrl === "https://workshopdata.com" || targetUrl === "https://workshopdata.com/"
+        ? "https://www.workshopdata.com/touch/site/layout/login"
+        : targetUrl;
+
+    const width = Math.min(1440, Math.max(1024, window.screen.availWidth - 80));
+    const height = Math.min(900, Math.max(700, window.screen.availHeight - 80));
+    const left = Math.max(20, Math.round((window.screen.availWidth - width) / 2));
+    const top = Math.max(20, Math.round((window.screen.availHeight - height) / 2));
+
+    const features = [
+      "popup=yes",
+      `width=${width}`,
+      `height=${height}`,
+      `left=${left}`,
+      `top=${top}`,
+      "menubar=yes",
+      "toolbar=yes",
+      "location=yes",
+      "status=yes",
+      "resizable=yes",
+      "scrollbars=yes",
+      "noopener=yes",
+      "noreferrer=yes",
+    ].join(",");
+
+    window.open(finalTarget, `HaynesProSession_${Date.now()}`, features);
+  };
+
   const filteredSheets = sheets.filter(
     (s) =>
       s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -237,10 +270,10 @@ export default function ManualsPage() {
           <Button
             variant="outline"
             className="border-primary/40 hover:bg-primary/10 gap-2"
-            onClick={() => window.open(haynesProUrl, "_blank", "noopener,noreferrer")}
+            onClick={() => openHaynesInNewBrowserWindow()}
           >
             <ExternalLink className="h-4 w-4 text-primary" />
-            <span className="hidden sm:inline">Abrir</span> HaynesPro Cloud
+            <span className="hidden sm:inline">Abrir HaynesPro</span> (Ventana Nueva)
           </Button>
         </div>
       </DashboardHeader>
@@ -652,8 +685,8 @@ export default function ManualsPage() {
                     variant="ghost"
                     size="sm"
                     className="h-8 px-2.5 text-xs gap-1.5"
-                    title="Abrir en ventana externa o 2do monitor"
-                    onClick={() => window.open(haynesProUrl, "_blank", "noopener,noreferrer")}
+                    title="Abrir en ventana nueva para 2do monitor"
+                    onClick={() => openHaynesInNewBrowserWindow()}
                   >
                     <Monitor className="h-3.5 w-3.5 text-primary" />
                     <span>2do Monitor</span>
@@ -663,10 +696,10 @@ export default function ManualsPage() {
                     variant="outline"
                     size="sm"
                     className="h-8 px-3 text-xs gap-1.5 border-primary/30 text-primary hover:bg-primary/10"
-                    onClick={() => window.open(haynesProUrl, "_blank")}
+                    onClick={() => openHaynesInNewBrowserWindow()}
                   >
                     <ExternalLink className="h-3.5 w-3.5" />
-                    Abrir Web
+                    Abrir en Navegador (Ventana Nueva)
                   </Button>
                 </div>
               </CardHeader>
@@ -676,10 +709,10 @@ export default function ManualsPage() {
                 <div className="w-full h-[750px] bg-neutral-900 border-none relative">
                   <iframe
                     key={iframeKey}
-                    src={haynesProUrl}
+                    src={`/api/haynespro?url=${encodeURIComponent(haynesProUrl)}&t=${iframeKey}`}
                     className="w-full h-full border-none"
                     title="HaynesPro WorkshopData Cloud"
-                    allow="clipboard-read; clipboard-write; fullscreen"
+                    allow="clipboard-read; clipboard-write; fullscreen; popups"
                   />
                 </div>
               </CardContent>
@@ -687,7 +720,7 @@ export default function ManualsPage() {
               {/* PIE DE LA VENTANA DIRECTA */}
               <div className="py-2.5 px-4 bg-muted/30 border-t border-border/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs text-muted-foreground">
                 <span>
-                  💡 Si tu distribuidor de HaynesPro bloquea el inicio de sesión embebido, utiliza el botón <strong>2do Monitor</strong> o <strong>Abrir Web</strong> en la barra superior.
+                  💡 Puedes operar directamente en la consola HaynesPro de arriba o pulsar <strong>Abrir en Navegador (Ventana Nueva)</strong> para lanzar una sesión independiente de navegador.
                 </span>
                 <button
                   onClick={handleSaveHaynesUrl}

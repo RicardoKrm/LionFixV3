@@ -418,14 +418,20 @@ async function main() {
   });
 
   // 9. Módulo 08: Manuales & Torques + HaynesPro
-  await runTest('08. Manuales & HaynesPro', 'Verificación de páginas independientes para Bloc de Notas y HaynesPro Directo junto a fichas de torques', async () => {
+  await runTest('08. Manuales & HaynesPro', 'Verificación de páginas independientes para Bloc de Notas y HaynesPro Directo + apertura en ventana nueva', async () => {
     const manualsPage = fs.readFileSync(
       path.resolve('src/app/dashboard/manuals/page.tsx'),
       'utf8'
     );
-    assert.ok(manualsPage.includes('workshopdata.com'), 'Debe integrar HaynesPro WorkshopData');
+    const haynesApi = fs.readFileSync(
+      path.resolve('src/app/api/haynespro/route.ts'),
+      'utf8'
+    );
+    assert.ok(manualsPage.includes('/api/haynespro'), 'Debe cargar la consola HaynesPro mediante /api/haynespro sin bloqueo de iframe');
+    assert.ok(manualsPage.includes('popup=yes'), 'Debe abrir HaynesPro en una ventana nueva independiente del navegador (popup=yes)');
     assert.ok(manualsPage.includes('Bloc de Notas Técnicas del Taller'), 'Debe incluir el Bloc de Notas del Mecánico');
     assert.ok(manualsPage.includes('value="notes"') && manualsPage.includes('value="haynespro"'), 'Debe separar Bloc de Notas y HaynesPro Directo en 2 pestañas/páginas independientes');
+    assert.ok(haynesApi.includes('WorkshopData'), 'El endpoint /api/haynespro debe servir el portal HaynesPro WorkshopData');
   });
 
   // 10. Módulo 09: Reportes y Exportación Excel
