@@ -50,13 +50,14 @@ export function QuoteFormDialog({ isOpen, onOpenChange, onSubmit, quote }: Quote
   const [allVehicles, setAllVehicles] = useState<any[]>([]);
 
   useEffect(() => {
+    if (!isOpen) return;
     supabase.from("clients").select("id, name").order("name").then(({ data }) => {
       if (data) setClients(data);
     });
     supabase.from("vehicles").select("id, make, model, license_plate, client_id").then(({ data }) => {
       if (data) setAllVehicles(data);
     });
-  }, []);
+  }, [isOpen]);
 
   const form = useForm<QuoteFormData>({
     resolver: zodResolver(quoteSchema),

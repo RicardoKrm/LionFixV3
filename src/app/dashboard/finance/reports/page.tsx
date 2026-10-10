@@ -59,16 +59,15 @@ export default function ReportsPage() {
   async function fetchData() {
     setLoading(true);
     try {
-      // 1. Cargar Órdenes de Trabajo con datos de cliente, vehículo y mecánico
+      // 1. Cargar Órdenes de Trabajo con datos de cliente y vehículo
       const { data: woData } = await supabase
         .from("work_orders")
         .select(`
           *,
           client:clients(name, phone, email),
-          vehicle:vehicles(license_plate, make, model, year, vin),
-          technician:profiles!work_orders_technician_id_fkey(name)
+          vehicle:vehicles(license_plate, make, model, year, vin)
         `)
-        .order("created_at", { ascending: false });
+        .order("entry_date", { ascending: false });
 
       // 2. Cargar Cotizaciones
       const { data: qData } = await supabase

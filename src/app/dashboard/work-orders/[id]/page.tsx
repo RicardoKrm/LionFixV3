@@ -84,7 +84,7 @@ export default function WorkOrderDetailPage({
       setLoading(true);
       const { data, error } = await supabase
         .from('work_orders')
-        .select('*, clients(*), vehicles(*), profiles!work_orders_technician_id_fkey(*)')
+        .select('*, clients(*), vehicles(*)')
         .eq('id', resolvedParams.id)
         .single();
 

@@ -22,6 +22,7 @@ import {
   BarChart,
   UserSquare,
   BookOpen,
+  HelpCircle,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -181,6 +182,17 @@ export function AppSidebar() {
               >
                 <UserSquare />
                 <span>Personal & Usuarios</span>
+              </SidebarMenuButton>
+            </Link>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <Link href="/dashboard/guide" passHref>
+              <SidebarMenuButton
+                isActive={isActive("/dashboard/guide")}
+                tooltip="Guía de Uso de Cada Panel"
+              >
+                <HelpCircle />
+                <span>Guía de Uso</span>
               </SidebarMenuButton>
             </Link>
           </SidebarMenuItem>

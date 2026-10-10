@@ -38,75 +38,50 @@ export default function NewClientPage() {
     setIsSubmitting(true);
 
     try {
-      // 1. Create Auth account for the client (using signUp)
-      let authUserId: string | null = null;
-      if (clientData.email) {
-        const autoPassword = Array.from({ length: 12 }, () =>
-          "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789".charAt(
-            Math.floor(Math.random() * 55)
-          )
-        ).join("");
-
-        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-          email: clientData.email,
-          password: autoPassword,
-          options: { data: { name: clientData.name, role: "client" } },
-        });
-
-        if (!signUpError && signUpData.user) {
-          authUserId = signUpData.user.id;
-          // Upsert profile with client role
-          await supabase.from("profiles").upsert({
-            id: authUserId,
-            name: clientData.name,
-            email: clientData.email,
-            role: "client",
-          }, { onConflict: "id" });
-        }
-      }
-
-      // 2. Create the client record, linking to auth user if created
+      // 1. Create the client record in CRM
       const { data: newClient, error: clientError } = await supabase
         .from("clients")
         .insert({
-          name: clientData.name,
-          email: clientData.email,
-          phone: clientData.phone,
-          ...(authUserId ? { user_id: authUserId } : {}),
+          name: clientData.name.trim(),
+          email: clientData.email.trim(),
+          phone: clientData.phone.trim(),
+          address: clientData.address.trim() || null,
         })
         .select()
         .single();
 
       if (clientError) throw new Error("Error al crear el cliente: " + clientError.message);
 
-      // 3. Create the associated vehicle
+      // 2. Create the associated vehicle
       const { error: vehicleError } = await supabase
         .from("vehicles")
         .insert({
           client_id: newClient.id,
-          license_plate: vehicleData.license_plate.toUpperCase(),
-          make: vehicleData.make,
-          model: vehicleData.model,
-          year: vehicleData.year,
-          vin: vehicleData.vin,
+          license_plate: vehicleData.license_plate.trim().toUpperCase(),
+          make: vehicleData.make.trim(),
+          model: vehicleData.model.trim(),
+          year: Number(vehicleData.year) || new Date().getFullYear(),
+          vin: vehicleData.vin.trim().toUpperCase() || null,
         });
 
       if (vehicleError) throw new Error("Error al registrar el vehículo: " + vehicleError.message);
 
-      // 4. ISO 9001 log
-      await supabase.from("iso_logs").insert({
-        event_type: "Ingreso de Nuevo Cliente y Vehículo",
-        description: `Se registró al cliente ${clientData.name} junto con su vehículo patente ${vehicleData.license_plate}.`,
-        reference_id: newClient.id,
-        reference_table: "clients",
-        clausula_iso: "8.2.1",
-      });
+      // 3. Optional ISO 9001 log (non-blocking)
+      try {
+        await supabase.from("iso_logs").insert({
+          event_type: "Ingreso de Nuevo Cliente y Vehículo",
+          description: `Se registró al cliente ${clientData.name} junto con su vehículo patente ${vehicleData.license_plate.toUpperCase()}.`,
+          reference_id: newClient.id,
+          reference_table: "clients",
+          clausula_iso: "8.2.1",
+        });
+      } catch {
+        // Ignore if iso_logs table is not enabled
+      }
 
       toast({
         title: "Registro Exitoso",
-        description: authUserId
-          ? `El cliente ${clientData.name} fue registrado con acceso al portal (${clientData.email}).`
-          : `El cliente y su vehículo han sido guardados correctamente.`,
+        description: `El cliente ${clientData.name} y su vehículo (${vehicleData.license_plate.toUpperCase()}) han sido guardados correctamente.`,
       });
 
       router.push("/dashboard/clients");

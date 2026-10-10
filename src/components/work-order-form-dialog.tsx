@@ -79,6 +79,7 @@ export function WorkOrderFormDialog({
   const [technicians, setTechnicians] = useState<any[]>([]);
 
   useEffect(() => {
+    if (!isOpen) return;
     supabase.from("clients").select("id, name").order("name").then(({ data }) => {
       if (data) setClients(data);
     });
@@ -91,9 +92,20 @@ export function WorkOrderFormDialog({
       })));
     });
     supabase.from("profiles").select("id, name").eq("role", "mechanic").then(({ data }) => {
-      if (data) setTechnicians(data);
+      let localMechs: any[] = [];
+      try {
+        const rawStaff = localStorage.getItem("lionfix_staff_directory");
+        if (rawStaff) {
+          localMechs = JSON.parse(rawStaff).filter((s: any) => s.role === "mechanic");
+        }
+      } catch {
+        // ignore
+      }
+      const combined = [...(data || []), ...localMechs];
+      const unique = Array.from(new Map(combined.map((m) => [m.id, m])).values());
+      setTechnicians(unique);
     });
-  }, []);
+  }, [isOpen]);
 
   const form = useForm<WorkOrderFormData>({
     resolver: zodResolver(workOrderSchema),

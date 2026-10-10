@@ -82,7 +82,20 @@ export default function PizarraProgramacion() {
         .from("calendar_events")
         .select(`*`);
 
-      let initialMecanicos: MecanicoCalendar[] = (mechData || []).map(m => ({
+      let localMechs: any[] = [];
+      try {
+        const rawStaff = localStorage.getItem("lionfix_staff_directory");
+        if (rawStaff) {
+          localMechs = JSON.parse(rawStaff).filter((s: any) => s.role === "mechanic");
+        }
+      } catch {
+        // ignore
+      }
+
+      const combinedMechs = [...(mechData || []), ...localMechs];
+      const uniqueMechs = Array.from(new Map(combinedMechs.map((m) => [m.id, m])).values());
+
+      let initialMecanicos: MecanicoCalendar[] = uniqueMechs.map(m => ({
         id: m.id,
         nombre: m.name,
         especialidad: 'Mecánico',

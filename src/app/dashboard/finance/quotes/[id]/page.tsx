@@ -179,27 +179,28 @@ export default function QuoteDetailPage({
   };
 
   const handleConvertToOT = async () => {
-    // Create a real work order from this approved quote
+    const otNumber = `OT-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
     const { data: newWo, error } = await supabase
       .from('work_orders')
       .insert({
+        ot_number: otNumber,
         client_id: quote.client_id,
         vehicle_id: quote.vehicle_id,
-        service_description: quote.notes || `Servicio originado desde Cotización ${quote.id.slice(0,8).toUpperCase()}`,
-        type: 'Manténción Correctiva',
-        status: 'Recibido',
-        parts_used: quote.items || [],
+        service_description: quote.notes || `Servicio originado desde Cotización ${quote.quote_number || quote.id.slice(0, 8).toUpperCase()}`,
+        type: 'Mantención Correctiva',
+        status: 'Ingresado',
+        total_price: quote.total || 0,
+        parts_used: quote.quote_items || quote.items || [],
       })
       .select()
       .single();
 
     if (!error && newWo) {
-      // Mark quote as converted
       await supabase.from('quotes').update({ status: 'Convertida a OT' }).eq('id', quote.id);
       setStatus('Convertida a OT');
       toast({
         title: "✅ Orden de Trabajo Creada",
-        description: `La OT fue creada exitosamente. ID: ${newWo.id.slice(0, 8).toUpperCase()}`,
+        description: `La OT ${otNumber} fue creada exitosamente.`,
       });
       router.push(`/dashboard/work-orders/${newWo.id}`);
     } else {
