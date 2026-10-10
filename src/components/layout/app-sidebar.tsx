@@ -23,6 +23,7 @@ import {
   UserSquare,
   BookOpen,
   HelpCircle,
+  Hammer,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -143,6 +144,17 @@ export function AppSidebar() {
               >
                 <Package />
                 <span>Inventario</span>
+              </SidebarMenuButton>
+            </Link>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <Link href="/dashboard/toolroom" passHref>
+              <SidebarMenuButton
+                isActive={isActive("/dashboard/toolroom")}
+                tooltip="Pañol de Taller — Control de Herramientas"
+              >
+                <Hammer />
+                <span>Pañol de Taller</span>
               </SidebarMenuButton>
             </Link>
           </SidebarMenuItem>

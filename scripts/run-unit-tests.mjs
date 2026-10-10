@@ -450,8 +450,59 @@ async function main() {
     assert.ok(reportsPage.includes('handleExportClients'), 'Debe exportar Clientes');
   });
 
-  // 11. Módulo 11: Guía de Uso de Cada Panel
-  await runTest('11. Guía de Uso', 'Verificación de los 10 módulos documentados en WorkshopUsageGuide y presencia en /dashboard/guide y Sidebar', async () => {
+  // 10.5. Módulo 11: Pañol de Taller (Herramientas, Salidas, Recepción, Certificados ISO y Reposición)
+  await runTest('11. Pañol de Taller', 'CRUD Real en DB: Crear Herramienta -> Salida a Mecánico -> Recepción en Pañol -> Certificado ISO -> Reposición', async () => {
+    const toolPayload = {
+      code: 'HER-TEST-99',
+      name: 'Torquímetro Digital Prueba Unitaria',
+      brand: 'Gedore Test',
+      category: 'Precisión y Torque',
+      location: 'Gabinete A-1',
+      status: 'Disponible',
+      condition: 'Óptima',
+      requiresCert: true,
+      certStatus: 'Vigente',
+      certNumber: 'CERT-TEST-2026',
+      certLab: 'LabMet Test',
+      cost: 210000,
+    };
+
+    const { data: createdTool, error: createErr } = await supabaseAdmin
+      .from('iso_logs')
+      .insert({
+        event_type: 'TOOL:HER-TEST-99',
+        description: JSON.stringify(toolPayload),
+        reference_table: 'panol_herramientas',
+        clausula_iso: '7.1.5',
+      })
+      .select()
+      .single();
+    assert.equal(createErr, null, `Error creando herramienta en Pañol: ${createErr?.message}`);
+    assert.ok(createdTool?.id);
+
+    // Simular Salida y luego Recepción en Pañol
+    const checkoutState = { ...toolPayload, status: 'En Uso', assignedToName: 'Carlos Muñoz' };
+    const { data: updatedTool, error: updErr } = await supabaseAdmin
+      .from('iso_logs')
+      .update({ description: JSON.stringify(checkoutState) })
+      .eq('id', createdTool.id)
+      .select()
+      .single();
+    assert.equal(updErr, null, `Error registrando salida de pañol: ${updErr?.message}`);
+    assert.equal(JSON.parse(updatedTool.description).status, 'En Uso');
+
+    // Limpiar herramienta de prueba
+    const { error: delErr } = await supabaseAdmin.from('iso_logs').delete().eq('id', createdTool.id);
+    assert.equal(delErr, null, `Error eliminando herramienta de prueba: ${delErr?.message}`);
+
+    const toolroomPage = fs.readFileSync(path.resolve('src/app/dashboard/toolroom/page.tsx'), 'utf8');
+    assert.ok(toolroomPage.includes('Pañol de Taller'), 'Debe existir la página de Pañol de Taller');
+    assert.ok(toolroomPage.includes('checkout_tool') && toolroomPage.includes('checkin_tool'), 'Debe soportar Salidas y Recepción');
+    assert.ok(toolroomPage.includes('certify_tool') && toolroomPage.includes('create_replacement'), 'Debe soportar Certificados y Reposición');
+  });
+
+  // 11. Módulo 12: Guía de Uso de Cada Panel
+  await runTest('12. Guía de Uso', 'Verificación de los 11 módulos documentados en WorkshopUsageGuide y presencia en /dashboard/guide y Sidebar', async () => {
     const guideComp = fs.readFileSync(
       path.resolve('src/components/workshop-usage-guide.tsx'),
       'utf8'
@@ -465,7 +516,9 @@ async function main() {
       'utf8'
     );
     assert.ok(guideComp.includes('WORKSHOP_GUIDE_MODULES'), 'Debe exportar los módulos de la guía');
+    assert.ok(guideComp.includes('/dashboard/toolroom'), 'La guía debe documentar el Pañol de Taller');
     assert.ok(guidePage.includes('<WorkshopUsageGuide'), 'El panel /dashboard/guide debe mostrar la Guía de Uso');
+    assert.ok(sidebarComp.includes('/dashboard/toolroom'), 'El menú lateral debe incluir el enlace a Pañol de Taller');
     assert.ok(sidebarComp.includes('/dashboard/guide'), 'El menú lateral debe incluir el enlace a la Guía de Uso abajo de todo');
   });
 

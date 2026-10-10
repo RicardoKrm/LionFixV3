@@ -29,6 +29,7 @@ import {
   Search,
   Sparkles,
   Download,
+  Hammer,
 } from "lucide-react";
 
 export interface GuideModuleItem {
@@ -245,6 +246,26 @@ export const WORKSHOP_GUIDE_MODULES: GuideModuleItem[] = [
     ],
     quickTip:
       "Registra aquí a todos tus técnicos con el rol 'Mecánico' para poder asignarles órdenes de trabajo y horarios en el calendario.",
+  },
+  {
+    id: "toolroom",
+    number: "11",
+    title: "Pañol de Taller",
+    subtitle: "Control de herramientas: salidas, recepción, certificados ISO y reposición",
+    href: "/dashboard/toolroom",
+    badge: "Pañol & ISO 9001",
+    icon: Hammer,
+    colorClass: "text-orange-400 bg-orange-500/10 border-orange-500/30",
+    summary:
+      "Módulo integral encargado de custodiar las herramientas e instrumentos del taller, controlando quién las retira, en qué condición se recepcionan, sus certificados de calibración y sus solicitudes de reposición.",
+    capabilities: [
+      "Registrar Salidas de Pañol asignando la herramienta a un mecánico responsable y vinculándola opcionalmente a una Orden de Trabajo.",
+      "Ejecutar la Recepción (Entrada) en Pañol verificando el estado físico de devolución (Óptima, Desgaste Leve o Dañada con envío automático a Reposición).",
+      "Controlar Certificados y Calibración Metrológica (ISO 9001 Cláusula 7.1.5) con fechas de emisión, vencimiento, laboratorio e impresión de certificado oficial.",
+      "Gestionar la cola de Reposición de Herramientas por rotura, desgaste o extravío y confirmar su reingreso al pañol con 1 clic.",
+    ],
+    quickTip:
+      "Si al recepcionar una herramienta marcas su estado como 'Dañada', el sistema crea automáticamente la solicitud en la pestaña de Reposición.",
   },
 ];
 
