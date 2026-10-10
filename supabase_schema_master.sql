@@ -21,12 +21,18 @@ CREATE TABLE IF NOT EXISTS public.profiles (
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Profiles are viewable by authenticated users" ON public.profiles;
+DROP POLICY IF EXISTS "Users can update own profile or admins can update all" ON public.profiles;
+DROP POLICY IF EXISTS "Users can update own profile" ON public.profiles;
+DROP POLICY IF EXISTS "Users can insert own profile" ON public.profiles;
+
 CREATE POLICY "Profiles are viewable by authenticated users" ON public.profiles
   FOR SELECT USING (true);
 
-DROP POLICY IF EXISTS "Users can update own profile or admins can update all" ON public.profiles;
-CREATE POLICY "Users can update own profile or admins can update all" ON public.profiles
-  FOR ALL USING (auth.uid() = id OR EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin'));
+CREATE POLICY "Users can update own profile" ON public.profiles
+  FOR UPDATE USING (auth.uid() = id);
+
+CREATE POLICY "Users can insert own profile" ON public.profiles
+  FOR INSERT WITH CHECK (auth.uid() = id);
 
 -- Trigger automático para crear perfil al registrar usuario en Supabase Auth
 CREATE OR REPLACE FUNCTION public.handle_new_user()
