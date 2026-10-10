@@ -68,10 +68,16 @@ export default function PizarraProgramacion() {
   async function fetchData() {
     setLoading(true);
     try {
-      const { data: mechData } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("role", "mechanic");
+      let mechData: any[] = [];
+      try {
+        const mechRes = await fetch("/api/users?role=mechanic");
+        const mechJson = await mechRes.json();
+        if (mechRes.ok && Array.isArray(mechJson.data)) {
+          mechData = mechJson.data;
+        }
+      } catch {
+        // fallback
+      }
 
       const { data: woData } = await supabase
         .from("work_orders")
@@ -82,20 +88,7 @@ export default function PizarraProgramacion() {
         .from("calendar_events")
         .select(`*`);
 
-      let localMechs: any[] = [];
-      try {
-        const rawStaff = localStorage.getItem("lionfix_staff_directory");
-        if (rawStaff) {
-          localMechs = JSON.parse(rawStaff).filter((s: any) => s.role === "mechanic");
-        }
-      } catch {
-        // ignore
-      }
-
-      const combinedMechs = [...(mechData || []), ...localMechs];
-      const uniqueMechs = Array.from(new Map(combinedMechs.map((m) => [m.id, m])).values());
-
-      let initialMecanicos: MecanicoCalendar[] = uniqueMechs.map(m => ({
+      let initialMecanicos: MecanicoCalendar[] = (mechData || []).map(m => ({
         id: m.id,
         nombre: m.name,
         especialidad: 'Mecánico',

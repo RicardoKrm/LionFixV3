@@ -186,18 +186,16 @@ export default function QuoteDetailPage({
         ot_number: otNumber,
         client_id: quote.client_id,
         vehicle_id: quote.vehicle_id,
-        service_description: quote.notes || `Servicio originado desde Cotización ${quote.quote_number || quote.id.slice(0, 8).toUpperCase()}`,
+        service_description: quote.notes || quote.diagnostics_main_failure || `Servicio originado desde Cotización ${quote.quote_number || quote.id.slice(0, 8).toUpperCase()}`,
         type: 'Mantención Correctiva',
         status: 'Ingresado',
-        total_price: quote.total || 0,
-        parts_used: quote.quote_items || quote.items || [],
       })
       .select()
       .single();
 
     if (!error && newWo) {
-      await supabase.from('quotes').update({ status: 'Convertida a OT' }).eq('id', quote.id);
-      setStatus('Convertida a OT');
+      await supabase.from('quotes').update({ status: 'Aprobada' }).eq('id', quote.id);
+      setStatus('Aprobada');
       toast({
         title: "✅ Orden de Trabajo Creada",
         description: `La OT ${otNumber} fue creada exitosamente.`,

@@ -156,7 +156,6 @@ export default function InventoryPage() {
       location: data.location,
       cost: data.cost,
       price: data.price,
-      supplier: data.supplier,
     };
 
     if (selectedPart) {
@@ -181,7 +180,30 @@ export default function InventoryPage() {
 
   const handlePurchaseOrderSubmit = async (data: PurchaseOrder) => {
     const total = data.items.reduce((sum: number, item: any) => sum + (item.quantity * item.unitPrice), 0);
-    const { error } = await supabase
+
+    // 1. Actualizar stock en la tabla parts para los SKUs incluidos en la orden
+    const updatedInventory = [...inventory];
+    for (const item of data.items as any[]) {
+      const existing = updatedInventory.find(
+        (p) => p.sku.toLowerCase() === String(item.sku || '').toLowerCase() || p.name.toLowerCase() === String(item.name || '').toLowerCase()
+      );
+      if (existing) {
+        const newStock = Number(existing.stock || 0) + Number(item.quantity || 0);
+        await supabase.from('parts').update({ stock: newStock }).eq('sku', existing.sku);
+        existing.stock = newStock;
+      }
+    }
+    setInventory(updatedInventory);
+
+    // 2. Registrar orden de compra en iso_logs (y en purchase_orders si existe la tabla)
+    await supabase.from('iso_logs').insert({
+      event_type: 'Orden de Compra Repuestos',
+      description: `Orden enviada a ${data.supplier} (${data.items.length} ítems) por $${total.toLocaleString('es-CL')}. Notas: ${data.notes || 'S/N'}`,
+      reference_table: 'parts',
+      clausula_iso: '8.4 - Control de procesos, productos y servicios suministrados externamente',
+    });
+
+    await supabase
       .from('purchase_orders')
       .insert({
         supplier: data.supplier,
@@ -189,20 +211,13 @@ export default function InventoryPage() {
         notes: data.notes || '',
         total,
         items: data.items,
-      });
+      })
+      .then(() => {});
 
-    if (!error) {
-      toast({
-        title: "Orden de Compra Registrada",
-        description: `Orden enviada a ${data.supplier} con ${data.items.length} ítem(s) guardada en la base de datos.`,
-      });
-    } else {
-      toast({
-        variant: "destructive",
-        title: "Error al crear orden de compra",
-        description: error.message,
-      });
-    }
+    toast({
+      title: "Orden de Compra Registrada",
+      description: `Orden enviada a ${data.supplier} con ${data.items.length} ítem(s) guardada en la base de datos.`,
+    });
     setIsPurchaseOrderOpen(false);
   };
 

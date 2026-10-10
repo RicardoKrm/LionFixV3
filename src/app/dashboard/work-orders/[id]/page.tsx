@@ -92,7 +92,38 @@ export default function WorkOrderDetailPage({
         console.error("Error fetching work order:", error);
         setWorkOrder(null);
       } else {
-        setWorkOrder(data);
+        const [{ data: logsData }, { data: woPartsData }] = await Promise.all([
+          supabase
+            .from('service_logs')
+            .select('*')
+            .eq('work_order_id', resolvedParams.id)
+            .order('created_at', { ascending: true }),
+          supabase
+            .from('work_order_parts')
+            .select('*, parts(*)')
+            .eq('work_order_id', resolvedParams.id),
+        ]);
+
+        const mappedLogs = (logsData || []).map((l: any) => ({
+          id: l.id,
+          timestamp: l.created_at,
+          technician: currentUserName,
+          entry: l.entry_text,
+        }));
+
+        const mappedParts = (woPartsData || []).map((wp: any) => ({
+          sku: wp.parts?.sku || '',
+          name: wp.parts?.name || 'Repuesto',
+          quantity: wp.quantity,
+          price: wp.unit_price,
+          cost: wp.parts?.cost || 0,
+        }));
+
+        setWorkOrder({
+          ...data,
+          service_log: mappedLogs,
+          parts_used: mappedParts,
+        });
         fetchAttachedFiles();
       }
       setLoading(false);
@@ -149,12 +180,12 @@ export default function WorkOrderDetailPage({
   const handleFormSubmit = async (data: any) => {
     if (!workOrder) return;
 
+    const rawTech = data.technician_id || data.technician;
     const updatePayload: any = {
       service_description: data.service || data.service_description,
       type: data.type,
-      technician_id: data.technician_id || data.technician,
-      labor_hours: data.laborHours ?? data.labor_hours,
-      parts_used: data.parts ?? data.parts_used,
+      technician_id: rawTech && rawTech.trim() !== "" ? rawTech : null,
+      labor_hours: data.laborHours ?? data.labor_hours ?? 0,
     };
 
     if (data.status === 'Listo para Retiro' || data.status === 'Entregado') {
@@ -175,13 +206,42 @@ export default function WorkOrderDetailPage({
       return;
     }
 
+    // Sincronizar repuestos en work_order_parts si fueron editados
+    const updatedParts = data.parts ?? data.parts_used ?? workOrder.parts_used ?? [];
+    if (Array.isArray(data.parts) && data.parts.length > 0) {
+      const skus = data.parts.map((p: any) => p.sku).filter(Boolean);
+      if (skus.length > 0) {
+        const { data: dbParts } = await supabase.from('parts').select('id, sku').in('sku', skus);
+        if (dbParts) {
+          await supabase.from('work_order_parts').delete().eq('work_order_id', workOrder.id);
+          const rows = data.parts
+            .map((p: any) => {
+              const found = dbParts.find((d: any) => d.sku === p.sku);
+              return found
+                ? {
+                    work_order_id: workOrder.id,
+                    part_id: found.id,
+                    quantity: p.quantity || 1,
+                    unit_price: p.price || 0,
+                  }
+                : null;
+            })
+            .filter(Boolean);
+          if (rows.length > 0) {
+            await supabase.from('work_order_parts').insert(rows);
+          }
+        }
+      }
+    }
+
     setWorkOrder({
       ...workOrder,
       ...updatePayload,
+      parts_used: updatedParts,
     });
     toast({
       title: "Orden de Trabajo Actualizada",
-      description: `Se ha actualizado la orden ${workOrder.id}.`,
+      description: `Se ha actualizado la orden ${workOrder.ot_number || workOrder.id}.`,
     });
     setIsFormOpen(false);
   };
@@ -189,19 +249,14 @@ export default function WorkOrderDetailPage({
   const handleAddLogEntry = async () => {
     if (!newLogEntry.trim() || !workOrder) return;
 
-    const entry: ServiceLogEntry = {
-      timestamp: new Date().toISOString(),
-      technician: currentUserName,
-      entry: newLogEntry.trim(),
-    };
-
-    const currentLog = Array.isArray(workOrder.service_log) ? workOrder.service_log : [];
-    const updatedLog = [...currentLog, entry];
-
-    const { error } = await supabase
-      .from('work_orders')
-      .update({ service_log: updatedLog })
-      .eq('id', workOrder.id);
+    const { data: insertedLog, error } = await supabase
+      .from('service_logs')
+      .insert({
+        work_order_id: workOrder.id,
+        entry_text: newLogEntry.trim(),
+      })
+      .select()
+      .single();
 
     if (error) {
       toast({
@@ -211,6 +266,15 @@ export default function WorkOrderDetailPage({
       });
       return;
     }
+
+    const entry: ServiceLogEntry = {
+      timestamp: insertedLog?.created_at || new Date().toISOString(),
+      technician: currentUserName,
+      entry: newLogEntry.trim(),
+    };
+
+    const currentLog = Array.isArray(workOrder.service_log) ? workOrder.service_log : [];
+    const updatedLog = [...currentLog, entry];
 
     setWorkOrder({ ...workOrder, service_log: updatedLog });
     setNewLogEntry("");

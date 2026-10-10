@@ -91,20 +91,14 @@ export function WorkOrderFormDialog({
         sku: p.sku, name: p.name, cost: p.cost, price: p.price, stock: p.stock,
       })));
     });
-    supabase.from("profiles").select("id, name").eq("role", "mechanic").then(({ data }) => {
-      let localMechs: any[] = [];
-      try {
-        const rawStaff = localStorage.getItem("lionfix_staff_directory");
-        if (rawStaff) {
-          localMechs = JSON.parse(rawStaff).filter((s: any) => s.role === "mechanic");
+    fetch("/api/users?role=mechanic")
+      .then((r) => r.json())
+      .then((json) => {
+        if (Array.isArray(json.data)) {
+          setTechnicians(json.data);
         }
-      } catch {
-        // ignore
-      }
-      const combined = [...(data || []), ...localMechs];
-      const unique = Array.from(new Map(combined.map((m) => [m.id, m])).values());
-      setTechnicians(unique);
-    });
+      })
+      .catch(() => {});
   }, [isOpen]);
 
   const form = useForm<WorkOrderFormData>({

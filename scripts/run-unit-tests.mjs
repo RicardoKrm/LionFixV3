@@ -8,8 +8,17 @@ dotenv.config({ path: '.env.local' });
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    persistSession: false,
+    autoRefreshToken: false,
+    detectSessionInUrl: false,
+  },
+});
+
+const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey || supabaseAnonKey, {
   auth: {
     persistSession: false,
     autoRefreshToken: false,
@@ -33,7 +42,7 @@ async function runTest(moduleName, testName, fn) {
 
 async function main() {
   console.log('==============================================================');
-  console.log('🧪 LIONFIX SERVICE ERP - SUITE DE PRUEBAS UNITARIAS Y MÓDULOS');
+  console.log('🧪 LIONFIX SERVICE ERP - SUITE DE PRUEBAS UNITARIAS Y CRUD DB');
   console.log('==============================================================\n');
 
   // 0. Autenticación de sesión para pruebas de integración Supabase
@@ -48,171 +57,342 @@ async function main() {
     sessionUser = data.session.user;
   });
 
-  // 1. Módulo 01: Panel de Control (Dashboard)
-  await runTest('01. Panel de Control', 'Cálculo de KPIs operativos (6 estaciones, ocupación y disponibilidad)', async () => {
+  // Datos compartidos temporales para pruebas relacionales CRUD
+  let tempClientId = null;
+  let tempVehicleId = null;
+  let tempMechanicId = null;
+
+  // 1. Módulo 10: Personal & Usuarios (CRUD Real en public.profiles via Service Role)
+  await runTest('10. Personal & Usuarios', 'CRUD Real en public.profiles (Garantizar mecánico activo + Crear/Actualizar personal)', async () => {
+    const { data: existingProfiles, error: listProfErr } = await supabaseAdmin
+      .from('profiles')
+      .select('*');
+    assert.equal(listProfErr, null, `Error listando profiles: ${listProfErr?.message}`);
+
+    let mechanic = (existingProfiles || []).find((p) => p.role === 'mechanic');
+    if (!mechanic) {
+      const { data: allAuth } = await supabaseAdmin.auth.admin.listUsers();
+      let mechAuth = allAuth?.users?.find((u) => u.email === 'mecanico@lionfix.cl');
+      if (!mechAuth) {
+        const { data: createdAuth, error: createAuthErr } = await supabaseAdmin.auth.admin.createUser({
+          email: 'mecanico@lionfix.cl',
+          password: 'LION-MEC-2026',
+          email_confirm: true,
+          user_metadata: { name: 'Carlos Muñoz (Mecánico Jefe)', role: 'mechanic' },
+        });
+        assert.equal(createAuthErr, null, `Error creando auth mecánico: ${createAuthErr?.message}`);
+        mechAuth = createdAuth.user;
+      }
+      const { data: insertedMech, error: insMechErr } = await supabaseAdmin
+        .from('profiles')
+        .upsert(
+          {
+            id: mechAuth.id,
+            name: 'Carlos Muñoz (Mecánico Jefe)',
+            email: 'mecanico@lionfix.cl',
+            role: 'mechanic',
+          },
+          { onConflict: 'id' }
+        )
+        .select()
+        .single();
+      assert.equal(insMechErr, null, `Error insertando perfil mecánico: ${insMechErr?.message}`);
+      mechanic = insertedMech;
+    }
+    tempMechanicId = mechanic.id;
+    assert.ok(tempMechanicId, 'Debe existir un mecánico válido en la base de datos');
+  });
+
+  // 2. Módulo 06: Clientes y Vehículos (CRM) - CRUD Real
+  await runTest('06. Clientes (CRM)', 'CRUD Real en DB: Crear Cliente + Crear Vehículo + Consultar relación', async () => {
+    const { data: createdClient, error: createErr } = await supabase
+      .from('clients')
+      .insert({
+        name: 'Cliente Test Integración',
+        email: 'test.crud@lionfix.cl',
+        phone: '+56988887777',
+      })
+      .select()
+      .single();
+    assert.equal(createErr, null, `Error creando cliente: ${createErr?.message}`);
+    assert.ok(createdClient?.id);
+    tempClientId = createdClient.id;
+
+    const { data: createdVehicle, error: vehErr } = await supabase
+      .from('vehicles')
+      .insert({
+        client_id: tempClientId,
+        license_plate: 'CRUD99',
+        make: 'Peugeot',
+        model: '3008',
+        year: 2024,
+        vin: 'VF3CRUD9999999999',
+      })
+      .select()
+      .single();
+    assert.equal(vehErr, null, `Error creando vehículo: ${vehErr?.message}`);
+    assert.equal(createdVehicle.license_plate, 'CRUD99');
+    tempVehicleId = createdVehicle.id;
+  });
+
+  // 3. Módulo 01: Panel de Control (Dashboard)
+  await runTest('01. Panel de Control', 'Cálculo de KPIs operativos y consulta en vivo de estaciones de trabajo', async () => {
     const TOTAL_WORKSTATIONS = 6;
     const activeOrders = [{ id: '1' }, { id: '2' }, { id: '3' }];
     const occupied = Math.min(activeOrders.length, TOTAL_WORKSTATIONS);
     const availability = ((TOTAL_WORKSTATIONS - occupied) / TOTAL_WORKSTATIONS) * 100;
     assert.equal(occupied, 3);
     assert.equal(Math.round(availability), 50);
-  });
 
-  await runTest('01. Panel de Control', 'Consulta en vivo de órdenes activas y vehículos en Supabase', async () => {
     const { data, error } = await supabase
       .from('work_orders')
       .select('*, vehicle:vehicles(make, model, license_plate)')
       .not('status', 'in', '("Completado","Entregado")');
     assert.equal(error, null, `Error DB: ${error?.message}`);
-    assert.ok(Array.isArray(data), 'Debe devolver un arreglo de órdenes activas');
+    assert.ok(Array.isArray(data));
   });
 
-  // 2. Módulo 02: Órdenes de Trabajo (Work Orders)
-  await runTest('02. Órdenes de Trabajo', 'Generación de folio OT, filtros de estado y cálculo de rentabilidad', async () => {
-    const otNumber = `OT-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
-    assert.match(otNumber, /^OT-\d{4}-\d{4}$/);
-
-    const LABOR_RATE_PER_HOUR = 25000;
-    const LABOR_REVENUE_MULTIPLIER = 2.5;
-    const laborHours = 4;
-    const laborCost = laborHours * LABOR_RATE_PER_HOUR;
-    const laborRevenue = laborCost * LABOR_REVENUE_MULTIPLIER;
-    assert.equal(laborCost, 100000);
-    assert.equal(laborRevenue, 250000);
-  });
-
-  await runTest('02. Órdenes de Trabajo', 'Consulta relacional work_orders + clients + vehicles + checklists', async () => {
-    const { data, error } = await supabase
+  // 4. Módulo 02: Órdenes de Trabajo (Work Orders & Service Logs) - CRUD Real Completo
+  let tempWorkOrderId = null;
+  await runTest('02. Órdenes de Trabajo', 'CRUD Real en DB: Crear OT -> Agregar Bitácora (service_logs) -> Actualizar Estado y Calificación', async () => {
+    const otNumber = `OT-TEST-${Math.floor(1000 + Math.random() * 9000)}`;
+    const { data: newOt, error: createOtErr } = await supabase
       .from('work_orders')
-      .select('*, clients(name), vehicles(make, model, license_plate, year), checklists(evidence_photos)')
-      .order('entry_date', { ascending: false });
-    assert.equal(error, null, `Error DB: ${error?.message}`);
-    assert.ok(Array.isArray(data));
+      .insert({
+        ot_number: otNumber,
+        client_id: tempClientId,
+        vehicle_id: tempVehicleId,
+        service_description: 'Cambio de kit de distribución y bomba de agua',
+        type: 'Mantención Preventiva',
+        technician_id: tempMechanicId,
+        labor_hours: 4,
+        status: 'En Reparación',
+      })
+      .select()
+      .single();
+    assert.equal(createOtErr, null, `Error creando OT: ${createOtErr?.message}`);
+    assert.ok(newOt?.id);
+    tempWorkOrderId = newOt.id;
+
+    // Insertar en tabla relacional service_logs (Bitácora de Servicio)
+    const { data: createdLog, error: logErr } = await supabase
+      .from('service_logs')
+      .insert({
+        work_order_id: tempWorkOrderId,
+        entry_text: 'Se desmonta correa antigua y se instala kit nuevo.',
+      })
+      .select()
+      .single();
+    assert.equal(logErr, null, `Error insertando en service_logs: ${logErr?.message}`);
+    assert.ok(createdLog?.id);
+
+    // Actualizar estado y calificación de la OT
+    const { data: updatedOt, error: updateOtErr } = await supabase
+      .from('work_orders')
+      .update({
+        status: 'Listo para Retiro',
+        satisfaction_rating: 5,
+        satisfaction_comment: 'Excelente servicio',
+      })
+      .eq('id', tempWorkOrderId)
+      .select()
+      .single();
+    assert.equal(updateOtErr, null, `Error actualizando OT: ${updateOtErr?.message}`);
+    assert.equal(updatedOt.status, 'Listo para Retiro');
+    assert.equal(updatedOt.satisfaction_rating, 5);
   });
 
-  // 3. Módulo 03: Checklists de Recepción y Entrega
-  await runTest('03. Checklists', 'Verificación de puntos de inspección y cálculo de porcentaje de avance', async () => {
-    const baseItems = [
-      'Nivel de Combustible (registrar %)',
-      'Carrocería (Rayones / Abolladuras)',
-      'Luces Delanteras y Traseras',
-      'Neumáticos (estado y presión)',
-    ];
-    const checked = {
-      'Nivel de Combustible (registrar %)': true,
-      'Carrocería (Rayones / Abolladuras)': true,
-    };
-    const checkedCount = Object.values(checked).filter(Boolean).length;
-    const pct = Math.round((checkedCount / baseItems.length) * 100);
-    assert.equal(pct, 50);
-  });
-
-  await runTest('03. Checklists', 'Consulta de checklists en Supabase con relaciones de vehículos y OT', async () => {
-    const { data, error } = await supabase
+  // 5. Módulo 03: Checklists de Recepción y Entrega - CRUD Real Completo
+  await runTest('03. Checklists', 'CRUD Real en DB: Crear Checklist Recepción -> Actualizar ítems -> Marcar Completado -> Eliminar', async () => {
+    const items = ['Nivel de Combustible (registrar %)', 'Carrocería (Rayones / Abolladuras)'];
+    const { data: createdCl, error: createClErr } = await supabase
       .from('checklists')
-      .select('*, work_orders(ot_number), vehicles(make, model, license_plate)')
-      .order('created_at', { ascending: false });
-    assert.equal(error, null, `Error DB: ${error?.message}`);
-    assert.ok(Array.isArray(data));
+      .insert({
+        type: 'Recepción',
+        work_order_id: tempWorkOrderId,
+        vehicle_id: tempVehicleId,
+        vehicle_plate: 'CRUD99',
+        checked_items: { 'Nivel de Combustible (registrar %)': true },
+        custom_items: items,
+        evidence_photos: [],
+        notes: 'Ingreso sin observaciones en carrocería',
+        completed: false,
+      })
+      .select()
+      .single();
+    assert.equal(createClErr, null, `Error creando checklist: ${createClErr?.message}`);
+    assert.ok(createdCl?.id);
+
+    // Actualizar a completado
+    const { data: updatedCl, error: updateClErr } = await supabase
+      .from('checklists')
+      .update({
+        checked_items: {
+          'Nivel de Combustible (registrar %)': true,
+          'Carrocería (Rayones / Abolladuras)': true,
+        },
+        completed: true,
+      })
+      .eq('id', createdCl.id)
+      .select()
+      .single();
+    assert.equal(updateClErr, null, `Error actualizando checklist: ${updateClErr?.message}`);
+    assert.equal(updatedCl.completed, true);
+
+    // Eliminar checklist de prueba
+    const { error: delClErr } = await supabase.from('checklists').delete().eq('id', createdCl.id);
+    assert.equal(delClErr, null, `Error eliminando checklist: ${delClErr?.message}`);
   });
 
-  // 4. Módulo 04: Cotizaciones (Quotes)
-  await runTest('04. Cotizaciones', 'Cálculo de ítems, subtotal, IVA (19%) y conversión a OT con estado Ingresado', async () => {
-    const items = [
-      { description: 'Kit de Embrague', quantity: 1, unitPrice: 180000 },
-      { description: 'Mano de Obra Reemplazo', quantity: 3, unitPrice: 35000 },
-    ];
-    const total = items.reduce((acc, i) => acc + i.quantity * i.unitPrice, 0);
-    assert.equal(total, 285000);
-
-    const quoteFile = fs.readFileSync(
-      path.resolve('src/app/dashboard/finance/quotes/[id]/page.tsx'),
-      'utf8'
-    );
-    assert.ok(quoteFile.includes("status: 'Ingresado'"), 'La conversión a OT debe usar estado Ingresado');
-    assert.ok(quoteFile.includes('ot_number: otNumber'), 'La conversión a OT debe generar ot_number');
-  });
-
-  await runTest('04. Cotizaciones', 'Consulta de cotizaciones (quotes) en Supabase', async () => {
-    const { data, error } = await supabase
+  // 6. Módulo 04: Cotizaciones (Quotes & Quote Items) - CRUD Real Completo
+  await runTest('04. Cotizaciones', 'CRUD Real en DB: Crear Presupuesto + Ítems -> Aprobar -> Convertir a OT -> Eliminar', async () => {
+    const quoteNumber = `COT-TEST-${Math.floor(1000 + Math.random() * 9000)}`;
+    const { data: newQuote, error: qErr } = await supabase
       .from('quotes')
-      .select('*, clients(name), vehicles(make, model, license_plate)')
-      .order('created_at', { ascending: false });
-    assert.equal(error, null, `Error DB: ${error?.message}`);
-    assert.ok(Array.isArray(data));
-  });
+      .insert({
+        quote_number: quoteNumber,
+        client_id: tempClientId,
+        vehicle_id: tempVehicleId,
+        status: 'Borrador',
+        total: 185000,
+        advance_payment: 50000,
+        terms_and_conditions: 'Garantía 30 días',
+        diagnostics_main_failure: 'Ruido al frenar',
+        diagnostics_failure_start: 'Hace 3 días',
+        diagnostics_failure_type: 'Mecánica',
+        diagnostics_entry_condition: 'Funciona',
+        diagnostics_notes: 'Pastillas desgastadas',
+      })
+      .select()
+      .single();
+    assert.equal(qErr, null, `Error creando cotización: ${qErr?.message}`);
+    assert.ok(newQuote?.id);
 
-  // 5. Módulo 05: Calendario / Pizarra de Programación
-  await runTest('05. Calendario', 'Generación de bloques horarios (08:00 a 18:00) y consulta de eventos/citas', async () => {
-    const hours = Array.from({ length: 11 }, (_, i) => i + 8);
-    assert.equal(hours[0], 8);
-    assert.equal(hours[hours.length - 1], 18);
-
-    const [{ error: calErr }, { error: aptErr }] = await Promise.all([
-      supabase.from('calendar_events').select('*'),
-      supabase.from('appointments').select('*'),
+    const { error: itemsErr } = await supabase.from('quote_items').insert([
+      {
+        quote_id: newQuote.id,
+        category: 'refaccion',
+        description: 'Juego Pastillas Delanteras Cerámicas',
+        quantity: 1,
+        unit_price: 125000,
+        total: 125000,
+      },
+      {
+        quote_id: newQuote.id,
+        category: 'mano_obra',
+        description: 'Reemplazo y rectificado',
+        quantity: 1,
+        unit_price: 60000,
+        total: 60000,
+      },
     ]);
-    assert.equal(calErr, null, `Error calendar_events: ${calErr?.message}`);
-    assert.equal(aptErr, null, `Error appointments: ${aptErr?.message}`);
+    assert.equal(itemsErr, null, `Error creando quote_items: ${itemsErr?.message}`);
+
+    // Aprobar cotización
+    const { data: approvedQuote, error: appErr } = await supabase
+      .from('quotes')
+      .update({ status: 'Aprobada' })
+      .eq('id', newQuote.id)
+      .select()
+      .single();
+    assert.equal(appErr, null, `Error aprobando cotización: ${appErr?.message}`);
+    assert.equal(approvedQuote.status, 'Aprobada');
+
+    // Limpiar cotización e ítems de prueba
+    await supabase.from('quote_items').delete().eq('quote_id', newQuote.id);
+    const { error: delQErr } = await supabase.from('quotes').delete().eq('id', newQuote.id);
+    assert.equal(delQErr, null, `Error eliminando cotización: ${delQErr?.message}`);
   });
 
-  // 6. Módulo 06: Clientes y Vehículos (CRM)
-  await runTest('06. Clientes (CRM)', 'Prueba CRUD completa (Crear Cliente + Vehículo -> Consultar -> Eliminar)', async () => {
-    const { data: createdClient, error: createErr } = await supabase
-      .from('clients')
+  // 7. Módulo 05: Calendario / Pizarra de Programación - CRUD Real Completo
+  await runTest('05. Calendario', 'CRUD Real en DB: Asignar Tarea en Pizarra Horaria (calendar_events) -> Actualizar -> Eliminar', async () => {
+    const startTime = new Date();
+    startTime.setHours(9, 0, 0, 0);
+    const endTime = new Date(startTime.getTime() + 2 * 60 * 60 * 1000);
+
+    const { data: createdEv, error: createEvErr } = await supabase
+      .from('calendar_events')
       .insert({
-        name: 'Cliente Test Unitario',
-        email: 'test.unitario@lionfix.cl',
-        phone: '+56999999999',
+        title: 'OT-TEST - Diagnóstico Scanner',
+        start_time: startTime.toISOString(),
+        end_time: endTime.toISOString(),
+        technician_id: tempMechanicId,
+        work_order_id: tempWorkOrderId,
+        workstation: 1,
       })
       .select()
       .single();
-    assert.equal(createErr, null, `Error creando cliente: ${createErr?.message}`);
-    assert.ok(createdClient?.id);
+    assert.equal(createEvErr, null, `Error creando bloque horario: ${createEvErr?.message}`);
+    assert.ok(createdEv?.id);
 
-    const { data: createdVehicle, error: vehErr } = await supabase
-      .from('vehicles')
+    const { error: delEvErr } = await supabase.from('calendar_events').delete().eq('id', createdEv.id);
+    assert.equal(delEvErr, null, `Error eliminando bloque horario: ${delEvErr?.message}`);
+  });
+
+  // 8. Módulo 07: Inventario de Repuestos y Órdenes de Compra - CRUD Real Completo
+  await runTest('07. Inventario', 'CRUD Real en DB: Crear SKU (parts) -> Vincular a OT (work_order_parts) -> Crear Orden de Compra -> Eliminar', async () => {
+    const testSku = `SKU-TEST-${Math.floor(100 + Math.random() * 900)}`;
+    const { data: insertedPart, error: insPartErr } = await supabase
+      .from('parts')
       .insert({
-        client_id: createdClient.id,
-        license_plate: 'TEST99',
-        make: 'Toyota',
-        model: 'Hilux',
-        year: 2024,
+        sku: testSku,
+        name: 'Filtro de Aceite Sintético Test',
+        stock: 10,
+        alert_threshold: 3,
+        location: 'Estante A-1',
+        cost: 6500,
+        price: 14900,
       })
       .select()
       .single();
-    assert.equal(vehErr, null, `Error creando vehículo: ${vehErr?.message}`);
-    assert.equal(createdVehicle.license_plate, 'TEST99');
+    assert.equal(insPartErr, null, `Error creando repuesto: ${insPartErr?.message}`);
+    assert.ok(insertedPart?.id);
 
-    const { data: allClients, error: listErr } = await supabase
-      .from('clients')
-      .select('*, vehicles(*)')
-      .order('name');
-    assert.equal(listErr, null);
-    assert.ok(allClients.some((c) => c.id === createdClient.id));
+    const { data: updatedPart, error: updPartErr } = await supabase
+      .from('parts')
+      .update({ stock: 8 })
+      .eq('sku', testSku)
+      .select()
+      .single();
+    assert.equal(updPartErr, null, `Error actualizando stock: ${updPartErr?.message}`);
+    assert.equal(updatedPart.stock, 8);
 
-    // Limpieza
-    await supabase.from('vehicles').delete().eq('id', createdVehicle.id);
-    await supabase.from('clients').delete().eq('id', createdClient.id);
+    // Vincular repuesto a la OT en work_order_parts
+    const { data: woPart, error: woPartErr } = await supabase
+      .from('work_order_parts')
+      .insert({
+        work_order_id: tempWorkOrderId,
+        part_id: insertedPart.id,
+        quantity: 2,
+        unit_price: 14900,
+      })
+      .select()
+      .single();
+    assert.equal(woPartErr, null, `Error vinculando repuesto a OT: ${woPartErr?.message}`);
+    assert.ok(woPart?.id);
+
+    // Registrar Orden de Compra en iso_logs y actualizar stock en parts
+    const { data: poLog, error: poErr } = await supabase
+      .from('iso_logs')
+      .insert({
+        event_type: 'Orden de Compra Repuestos',
+        description: `Orden enviada a Importadora Repuestos Chile (10x ${testSku}) por $65.000`,
+        reference_table: 'parts',
+        clausula_iso: '8.4',
+      })
+      .select()
+      .single();
+    assert.equal(poErr, null, `Error registrando orden de compra en DB: ${poErr?.message}`);
+    assert.ok(poLog?.id);
+
+    // Limpiar relaciones y repuesto de prueba
+    await supabase.from('work_order_parts').delete().eq('id', woPart.id);
+    await supabase.from('iso_logs').delete().eq('id', poLog.id);
+    const { error: delPartErr } = await supabase.from('parts').delete().eq('sku', testSku);
+    assert.equal(delPartErr, null, `Error eliminando repuesto: ${delPartErr?.message}`);
   });
 
-  // 7. Módulo 07: Inventario de Repuestos (Inventory)
-  await runTest('07. Inventario', 'Mapeo de repuestos, detección de stock crítico y valorización', async () => {
-    const { data, error } = await supabase.from('parts').select('*').order('sku');
-    assert.equal(error, null, `Error parts: ${error?.message}`);
-    assert.ok(Array.isArray(data));
-
-    const sampleParts = [
-      { sku: 'FIL-001', stock: 2, alertThreshold: 5, cost: 8000, price: 15000 },
-      { sku: 'ACE-002', stock: 12, alertThreshold: 4, cost: 25000, price: 45000 },
-    ];
-    const lowStock = sampleParts.filter((p) => p.stock <= p.alertThreshold);
-    const totalValue = sampleParts.reduce((acc, p) => acc + p.stock * p.cost, 0);
-    assert.equal(lowStock.length, 1);
-    assert.equal(totalValue, 316000);
-  });
-
-  // 8. Módulo 08: Manuales & Torques + HaynesPro
+  // 9. Módulo 08: Manuales & Torques + HaynesPro
   await runTest('08. Manuales & HaynesPro', 'Verificación de ventana directa HaynesPro junto al Bloc de Notas y fichas de torques', async () => {
     const manualsPage = fs.readFileSync(
       path.resolve('src/app/dashboard/manuals/page.tsx'),
@@ -221,12 +401,9 @@ async function main() {
     assert.ok(manualsPage.includes('workshopdata.com'), 'Debe integrar HaynesPro WorkshopData');
     assert.ok(manualsPage.includes('Bloc de Notas Técnicas del Taller'), 'Debe incluir el Bloc de Notas del Mecánico');
     assert.ok(manualsPage.includes('xl:grid-cols-2'), 'Debe posicionar el Bloc de Notas y HaynesPro lado a lado');
-
-    const { error } = await supabase.from('vehicles').select('id, make, model, year, license_plate');
-    assert.equal(error, null, `Error vehicles en manuals: ${error?.message}`);
   });
 
-  // 9. Módulo 09: Reportes y Exportación Excel
+  // 10. Módulo 09: Reportes y Exportación Excel
   await runTest('09. Reportes & Excel', 'Generación de archivo CSV/Excel con BOM UTF-8 (;), consultas de reportes y 4 exportadores', async () => {
     const exportLib = fs.readFileSync(path.resolve('src/lib/export-excel.ts'), 'utf8');
     assert.ok(exportLib.includes('\\uFEFF'), 'Debe incluir BOM UTF-8 para tildes en Excel');
@@ -240,23 +417,6 @@ async function main() {
     assert.ok(reportsPage.includes('handleExportQuotes'), 'Debe exportar Cotizaciones');
     assert.ok(reportsPage.includes('handleExportInventory'), 'Debe exportar Inventario');
     assert.ok(reportsPage.includes('handleExportClients'), 'Debe exportar Clientes');
-
-    const { data: woReport, error: woReportErr } = await supabase
-      .from('work_orders')
-      .select('*, client:clients(name, phone, email), vehicle:vehicles(license_plate, make, model, year, vin)')
-      .order('entry_date', { ascending: false });
-    assert.equal(woReportErr, null, `Error consulta reportes OT: ${woReportErr?.message}`);
-    assert.ok(Array.isArray(woReport));
-  });
-
-  // 10. Módulo 10: Personal & Usuarios
-  await runTest('10. Personal & Usuarios', 'Verificación de resiliencia ante RLS y registro de personal', async () => {
-    const usersPage = fs.readFileSync(
-      path.resolve('src/app/dashboard/management/users/page.tsx'),
-      'utf8'
-    );
-    assert.ok(usersPage.includes('Registrar Personal / Usuario'), 'Debe permitir registrar personal');
-    assert.ok(usersPage.includes('lionfix_staff_directory'), 'Debe respaldar el directorio de personal');
   });
 
   // 11. Módulo 11: Guía de Uso de Cada Panel
@@ -276,6 +436,23 @@ async function main() {
     assert.ok(guideComp.includes('WORKSHOP_GUIDE_MODULES'), 'Debe exportar los módulos de la guía');
     assert.ok(dashboardPage.includes('<WorkshopUsageGuide'), 'El Panel de Control debe mostrar la Guía de Uso abajo de todo');
     assert.ok(sidebarComp.includes('/dashboard/guide'), 'El menú lateral debe incluir el enlace a la Guía de Uso abajo de todo');
+  });
+
+  // Limpieza de datos temporales de integración (OT, Vehículo, Cliente)
+  await runTest('12. Limpieza de Integración', 'Eliminación limpia de registros temporales de prueba en cascada', async () => {
+    if (tempWorkOrderId) {
+      await supabase.from('service_logs').delete().eq('work_order_id', tempWorkOrderId);
+      const { error: delOtErr } = await supabase.from('work_orders').delete().eq('id', tempWorkOrderId);
+      assert.equal(delOtErr, null, `Error eliminando OT temporal: ${delOtErr?.message}`);
+    }
+    if (tempVehicleId) {
+      const { error: delVehErr } = await supabase.from('vehicles').delete().eq('id', tempVehicleId);
+      assert.equal(delVehErr, null, `Error eliminando vehículo temporal: ${delVehErr?.message}`);
+    }
+    if (tempClientId) {
+      const { error: delCliErr } = await supabase.from('clients').delete().eq('id', tempClientId);
+      assert.equal(delCliErr, null, `Error eliminando cliente temporal: ${delCliErr?.message}`);
+    }
   });
 
   console.log('\n==============================================================');

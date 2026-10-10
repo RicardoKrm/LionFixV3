@@ -45,7 +45,6 @@ export default function NewClientPage() {
           name: clientData.name.trim(),
           email: clientData.email.trim(),
           phone: clientData.phone.trim(),
-          address: clientData.address.trim() || null,
         })
         .select()
         .single();

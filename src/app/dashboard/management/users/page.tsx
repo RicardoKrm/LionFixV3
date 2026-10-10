@@ -71,36 +71,20 @@ export default function UsersPage() {
 
   const fetchProfiles = useCallback(async () => {
     setLoading(true);
-    const localList = getLocalStaff();
-
     try {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .order("created_at", { ascending: false });
-
-      if (!error && data && data.length > 0) {
-        const mergedMap = new Map<string, StaffProfile>();
-        data.forEach((p: any) => {
-          mergedMap.set(p.id, {
-            id: p.id,
-            name: p.name || "Usuario",
-            email: p.email || "",
-            role: p.role || "mechanic",
-            created_at: p.created_at || new Date().toISOString(),
-          });
-        });
-        localList.forEach((lp) => {
-          if (!mergedMap.has(lp.id)) mergedMap.set(lp.id, lp);
-        });
-        setProfiles(Array.from(mergedMap.values()));
+      const res = await fetch("/api/users");
+      const json = await res.json();
+      if (res.ok && Array.isArray(json.data)) {
+        setProfiles(json.data);
+        saveLocalStaff(json.data);
         setLoading(false);
         return;
       }
     } catch {
-      // Fallback to local + current user if RLS policy blocks profiles query
+      // Fallback if offline
     }
 
+    const localList = getLocalStaff();
     const fallbackList: StaffProfile[] = [
       {
         id: user?.uid || "admin-principal",
@@ -113,7 +97,7 @@ export default function UsersPage() {
     ];
     setProfiles(fallbackList);
     setLoading(false);
-  }, [getLocalStaff, user]);
+  }, [getLocalStaff, saveLocalStaff, user]);
 
   useEffect(() => {
     fetchProfiles();
@@ -125,56 +109,64 @@ export default function UsersPage() {
     saveLocalStaff(updated);
 
     try {
-      await supabase
-        .from("profiles")
-        .update({ role: updatedRole })
-        .eq("id", userId);
+      const res = await fetch("/api/users", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: userId, role: updatedRole }),
+      });
+      if (!res.ok) throw new Error("Error al actualizar rol");
+      toast({
+        title: "Rol Guardado en Base de Datos",
+        description: "Los permisos del usuario han sido actualizados en Supabase.",
+      });
     } catch {
-      // Non-blocking if local entry
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo actualizar el rol en la base de datos.",
+      });
     }
-
-    toast({
-      title: "Rol Actualizado",
-      description: "Los permisos del usuario han sido modificados correctamente.",
-    });
   };
 
   const handleAddUser = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newName.trim() || !newEmail.trim()) return;
 
-    const entry: StaffProfile = {
-      id: typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `usr-${Date.now()}`,
-      name: newName.trim(),
-      email: newEmail.trim().toLowerCase(),
-      role: newRole,
-      created_at: new Date().toISOString(),
-    };
-
     try {
-      await supabase.from("profiles").insert({
-        id: entry.id,
-        name: entry.name,
-        email: entry.email,
-        role: entry.role,
+      const res = await fetch("/api/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: newName.trim(),
+          email: newEmail.trim().toLowerCase(),
+          role: newRole,
+        }),
       });
-    } catch {
-      // Keep in local directory if auth FK or RLS applies
+      const json = await res.json();
+      if (!res.ok || !json.data) {
+        throw new Error(json.error || "No se pudo crear el usuario");
+      }
+
+      const updated = [json.data, ...profiles.filter((p) => p.id !== json.data.id)];
+      setProfiles(updated);
+      saveLocalStaff(updated);
+
+      toast({
+        title: "Personal Guardado en Supabase",
+        description: `${json.data.name} (${json.data.email}) fue creado en la base de datos.`,
+      });
+
+      setNewName("");
+      setNewEmail("");
+      setNewRole("mechanic");
+      setIsAddOpen(false);
+    } catch (err: any) {
+      toast({
+        variant: "destructive",
+        title: "Error al registrar usuario",
+        description: err.message || "Ocurrió un error al guardar en Supabase.",
+      });
     }
-
-    const updated = [entry, ...profiles];
-    setProfiles(updated);
-    saveLocalStaff(updated);
-
-    toast({
-      title: "Personal Registrado",
-      description: `${entry.name} (${entry.email}) fue agregado al directorio.`,
-    });
-
-    setNewName("");
-    setNewEmail("");
-    setNewRole("mechanic");
-    setIsAddOpen(false);
   };
 
   const handleDeleteUser = async (target: StaffProfile) => {
@@ -192,15 +184,18 @@ export default function UsersPage() {
     saveLocalStaff(updated);
 
     try {
-      await supabase.from("profiles").delete().eq("id", target.id);
+      await fetch(`/api/users?id=${encodeURIComponent(target.id)}`, { method: "DELETE" });
+      toast({
+        title: "Usuario Eliminado",
+        description: `${target.name} ha sido eliminado de la base de datos.`,
+      });
     } catch {
-      // Ignore if local
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo eliminar el usuario.",
+      });
     }
-
-    toast({
-      title: "Usuario Eliminado",
-      description: `${target.name} ha sido removido del directorio.`,
-    });
   };
 
   const filteredProfiles = profiles.filter(
