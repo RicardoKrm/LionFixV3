@@ -37,23 +37,29 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
 
-  const fetchProfile = useCallback(async (userId: string, email: string): Promise<User> => {
+  const fetchProfile = useCallback(async (userId: string, email: string, metadata?: Record<string, any>): Promise<User> => {
     const isAdminEmail = email.toLowerCase().includes('admin');
     const fallbackUser: User = {
       uid: userId,
       email: email,
-      name: isAdminEmail ? 'Administrador' : email.split('@')[0],
-      role: (isAdminEmail ? 'admin' : 'mechanic') as UserRole,
-      avatarUrl: 'https://placehold.co/100x100.png',
+      name: metadata?.name || (isAdminEmail ? 'Administrador General' : email.split('@')[0]),
+      role: (metadata?.role || (isAdminEmail ? 'admin' : 'mechanic')) as UserRole,
+      avatarUrl: metadata?.avatar_url || 'https://placehold.co/100x100.png',
     };
 
     try {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
+      const result = await Promise.race([
+        supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', userId)
+          .single(),
+        new Promise<{ data: null; error: any }>((resolve) =>
+          setTimeout(() => resolve({ data: null, error: { message: 'timeout' } }), 3500)
+        ),
+      ]);
 
+      const profile = result?.data;
       if (!profile) {
         return fallbackUser;
       }
@@ -95,7 +101,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user && mounted) {
           if (currentUserIdRef.current !== session.user.id) {
-            const fullUser = await fetchProfile(session.user.id, session.user.email || '');
+            const fullUser = await fetchProfile(
+              session.user.id,
+              session.user.email || '',
+              session.user.user_metadata
+            );
             if (mounted) updateUserState(fullUser);
           }
         } else if (!session && mounted) {
@@ -126,9 +136,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         // Defer profile fetch outside the internal GoTrue lock tick to prevent deadlocks
         const userId = session.user.id;
         const userEmail = session.user.email || '';
+        const userMeta = session.user.user_metadata;
         setTimeout(async () => {
           if (!mounted) return;
-          const fullUser = await fetchProfile(userId, userEmail);
+          const fullUser = await fetchProfile(userId, userEmail, userMeta);
           if (mounted) {
             updateUserState(fullUser);
             setLoading(false);
@@ -155,7 +166,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (error) throw new Error(error.message);
 
       if (data.session?.user) {
-        const fullUser = await fetchProfile(data.session.user.id, data.session.user.email || email);
+        const fullUser = await fetchProfile(
+          data.session.user.id,
+          data.session.user.email || email,
+          data.session.user.user_metadata
+        );
         updateUserState(fullUser);
         switch (fullUser.role) {
           case 'admin':    router.push('/dashboard'); break;
