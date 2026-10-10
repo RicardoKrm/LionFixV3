@@ -1,0 +1,708 @@
+%PDF-1.3
+%ºß¬à
+3 0 obj
+<</Type /Page
+/Parent 1 0 R
+/Resources 2 0 R
+/MediaBox [0 0 595.2799999999999727 841.8899999999999864]
+/Contents 4 0 R
+>>
+endobj
+4 0 obj
+<<
+/Length 9077
+>>
+stream
+0.5670000000000001 w
+0 G
+0.06 0.09 0.16 rg
+0. 841.8899999999999864 595.2799999999999727 -96.3779527559055254 re
+f
+0.96 0.62 0.04 rg
+0. 745.5120472440944468 595.2799999999999727 -5.6692913385826778 re
+f
+BT
+/F2 18 Tf
+20.6999999999999993 TL
+0.961 0.62 0.043 rg
+42.5196850393700814 799.3703149606299121 Td
+(LIONFIX SERVICE ERP) Tj
+ET
+BT
+/F2 12 Tf
+13.7999999999999989 TL
+1. g
+42.5196850393700814 776.69314960629913 Td
+(Manual Paso a Paso: Recorrido del Cliente y Flujo Operativo del Taller) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0.796 0.835 0.882 rg
+42.5196850393700814 759.6852755905511003 Td
+(Desde el agendamiento online hasta la entrega del vehiculo reparado | Produccion: https://lion-fix-v3.vercel.app) Tj
+ET
+0.06 0.73 0.51 rg
+46.7716535433070888 717.1655905511810261 m
+548.5083464566928342 717.1655905511810261 l
+550.8566438181780995 717.1655905511810261 552.7603149606298985 715.2619194087293408 552.7603149606298985 712.9136220472440755 c
+552.7603149606298985 698.7403937007873083 l
+552.7603149606298985 696.3920963393021566 550.4120175991446331 694.4884251968503577 548.5083464566928342 694.4884251968503577 c
+46.7716535433070888 694.4884251968503577 l
+44.4233561818218305 694.4884251968503577 42.5196850393700814 696.836722558335623 42.5196850393700814 698.7403937007873083 c
+42.5196850393700814 712.9136220472440755 l
+42.5196850393700814 715.2619194087293408 44.8679824008553467 717.1655905511810261 46.7716535433070888 717.1655905511810261 c
+h
+f
+BT
+/F2 10 Tf
+11.5 TL
+1. g
+51.0236220472441033 701.5750393700786844 Td
+(PASO 1: Agendamiento Online \(Desde el Celular o PC del Cliente\)) Tj
+ET
+BT
+/F2 9.5 Tf
+10.9249999999999989 TL
+0.059 0.09 0.165 rg
+48.1889763779527627 683.1498425196850803 Td
+(Que hace / ve el Cliente:) Tj
+ET
+BT
+/F1 8.8 Tf
+10.1199999999999992 TL
+0.2 0.255 0.333 rg
+53.8582677165354369 670.3939370078740012 Td
+(• Entra a la pagina principal \(/\) y baja a la seccion Agenda \(Formulario interactivo de 4 pasos\).) Tj
+ET
+BT
+/F1 8.8 Tf
+10.1199999999999992 TL
+0.2 0.255 0.333 rg
+53.8582677165354369 658.4884251968503577 Td
+(• Paso 1 \(Vehiculo\): Ingresa Patente, Tipo de Vehiculo, Marca, Modelo y Kilometraje.) Tj
+ET
+BT
+/F1 8.8 Tf
+10.1199999999999992 TL
+0.2 0.255 0.333 rg
+53.8582677165354369 646.5829133858267141 Td
+(• Paso 2 \(Servicio\): Selecciona Mantencion, Diagnostico / Scanner, Reparacion General o Desabolladura y Pintura.) Tj
+ET
+BT
+/F1 8.8 Tf
+10.1199999999999992 TL
+0.2 0.255 0.333 rg
+53.8582677165354369 634.6774015748030706 Td
+(• Paso 3 \(Fecha y Hora\): Elige el dia disponible en el calendario y el bloque horario \(ej. 09:00, 11:30, 15:00\).) Tj
+ET
+BT
+/F1 8.8 Tf
+10.1199999999999992 TL
+0.2 0.255 0.333 rg
+53.8582677165354369 622.7718897637794271 Td
+(• Paso 4 \(Contacto\): Ingresa Nombre, RUT, Correo y Telefono \(WhatsApp\).) Tj
+ET
+BT
+/F1 8.8 Tf
+10.1199999999999992 TL
+0.2 0.255 0.333 rg
+53.8582677165354369 610.8663779527557836 Td
+(• Recibe en pantalla su Codigo de Reserva unico de 6 caracteres \(ej. A8F3K9\) para consultar su cita en cualquier momento.) Tj
+ET
+BT
+/F2 9.5 Tf
+10.9249999999999989 TL
+0.059 0.09 0.165 rg
+48.1889763779527627 593.2915748031495013 Td
+(Que pasa en el Software \(LionFix Service ERP\):) Tj
+ET
+BT
+/F1 8.8 Tf
+10.1199999999999992 TL
+0.2 0.255 0.333 rg
+53.8582677165354369 580.5356692913385359 Td
+(• La cita se guarda automaticamente en la tabla "appointments" de Supabase.) Tj
+ET
+BT
+/F1 8.8 Tf
+10.1199999999999992 TL
+0.2 0.255 0.333 rg
+53.8582677165354369 568.6301574803148924 Td
+(• Aparece de inmediato en el modulo Calendario \(/dashboard/calendar\) como tarjeta AGENDA.) Tj
+ET
+BT
+/F1 8.8 Tf
+10.1199999999999992 TL
+0.2 0.255 0.333 rg
+53.8582677165354369 556.7246456692912489 Td
+(• El jefe de taller arrastra la tarjeta al bloque horario del mecanico asignado \(ej. Carlos Munoz\).) Tj
+ET
+0.96 0.62 0.04 rg
+46.7716535433070888 530.6459055118109518 m
+548.5083464566928342 530.6459055118109518 l
+550.8566438181780995 530.6459055118109518 552.7603149606298985 528.7422343693590392 552.7603149606298985 526.3939370078738875 c
+552.7603149606298985 512.220708661417234 l
+552.7603149606298985 509.8724112999319118 550.4120175991446331 507.9687401574802266 548.5083464566928342 507.9687401574802266 c
+46.7716535433070888 507.9687401574802266 l
+44.4233561818218305 507.9687401574802266 42.5196850393700814 510.3170375189653782 42.5196850393700814 512.220708661417234 c
+42.5196850393700814 526.3939370078738875 l
+42.5196850393700814 528.7422343693590392 44.8679824008553467 530.6459055118109518 46.7716535433070888 530.6459055118109518 c
+h
+f
+BT
+/F2 10 Tf
+11.5 TL
+1. g
+51.0236220472441033 515.0553543307084965 Td
+(PASO 2: Llegada al Taller y Recepcion Digital \(Checklist + Fotos\)) Tj
+ET
+BT
+/F2 9.5 Tf
+10.9249999999999989 TL
+0.059 0.09 0.165 rg
+48.1889763779527627 496.6301574803148355 Td
+(Que hace / ve el Cliente:) Tj
+ET
+BT
+/F1 8.8 Tf
+10.1199999999999992 TL
+0.2 0.255 0.333 rg
+53.8582677165354369 483.8742519685038133 Td
+(• Llega al taller el dia de su cita y entrega las llaves de su vehiculo.) Tj
+ET
+BT
+/F1 8.8 Tf
+10.1199999999999992 TL
+0.2 0.255 0.333 rg
+53.8582677165354369 471.9687401574801697 Td
+(• Junto al recepcionista revisan el estado exterior e interior \(nivel de combustible, rayones previos, documentos y objetos de) Tj
+T* (valor\).) Tj
+ET
+BT
+/F2 9.5 Tf
+10.9249999999999989 TL
+0.059 0.09 0.165 rg
+48.1889763779527627 442.488425196850244 Td
+(Que pasa en el Software \(LionFix Service ERP\):) Tj
+ET
+BT
+/F1 8.8 Tf
+10.1199999999999992 TL
+0.2 0.255 0.333 rg
+53.8582677165354369 429.7325196850392217 Td
+(• Si es cliente nuevo, se registra en Clientes \(/dashboard/clients/new\) junto con su vehiculo y acceso opcional al Portal de) Tj
+T* (Cliente \(/login\).) Tj
+ET
+BT
+/F1 8.8 Tf
+10.1199999999999992 TL
+0.2 0.255 0.333 rg
+53.8582677165354369 405.9214960629919347 Td
+(• En Checklists \(/dashboard/management/checklists\), el taller crea un Nuevo Checklist de Recepcion.) Tj
+ET
+BT
+/F1 8.8 Tf
+10.1199999999999992 TL
+0.2 0.255 0.333 rg
+53.8582677165354369 394.015984251968348 Td
+(• Se marcan los 10 puntos de inspeccion y se suben fotos reales de entrada y portada directamente a Supabase Storage.) Tj
+ET
+0.98 0.45 0.09 rg
+46.7716535433070888 367.9372440944880509 m
+548.5083464566928342 367.9372440944880509 l
+550.8566438181780995 367.9372440944880509 552.7603149606298985 366.0335729520363088 552.7603149606298985 363.6852755905510435 c
+552.7603149606298985 349.51204724409439 l
+552.7603149606298985 347.1637498826091246 550.4120175991446331 345.2600787401573825 548.5083464566928342 345.2600787401573825 c
+46.7716535433070888 345.2600787401573825 l
+44.4233561818218305 345.2600787401573825 42.5196850393700814 347.608376101642591 42.5196850393700814 349.51204724409439 c
+42.5196850393700814 363.6852755905510435 l
+42.5196850393700814 366.0335729520363088 44.8679824008553467 367.9372440944880509 46.7716535433070888 367.9372440944880509 c
+h
+f
+BT
+/F2 10 Tf
+11.5 TL
+1. g
+51.0236220472441033 352.3466929133857093 Td
+(PASO 3: Diagnostico, Presupuesto Digital y Aprobacion por WhatsApp) Tj
+ET
+BT
+/F2 9.5 Tf
+10.9249999999999989 TL
+0.059 0.09 0.165 rg
+48.1889763779527627 333.9214960629919915 Td
+(Que hace / ve el Cliente:) Tj
+ET
+BT
+/F1 8.8 Tf
+10.1199999999999992 TL
+0.2 0.255 0.333 rg
+53.8582677165354369 321.1655905511810261 Td
+(• Recibe un mensaje automatico en su WhatsApp con el monto total y un enlace directo a su presupuesto digital \(/quote/[id]\).) Tj
+ET
+BT
+/F1 8.8 Tf
+10.1199999999999992 TL
+0.2 0.255 0.333 rg
+53.8582677165354369 309.2600787401573825 Td
+(• Abre el enlace en su celular: visualiza los datos de su vehiculo, el desglose de repuestos y mano de obra, y el total.) Tj
+ET
+BT
+/F1 8.8 Tf
+10.1199999999999992 TL
+0.2 0.255 0.333 rg
+53.8582677165354369 297.3545669291338527 Td
+(• Presiona el boton verde "Aprobar Cotizacion" \(o "Rechazar"\) directamente desde su telefono o desde su Portal) Tj
+T* (\(/portal/dashboard\).) Tj
+ET
+BT
+/F2 9.5 Tf
+10.9249999999999989 TL
+0.059 0.09 0.165 rg
+48.1889763779527627 267.8742519685038133 Td
+(Que pasa en el Software \(LionFix Service ERP\):) Tj
+ET
+BT
+/F1 8.8 Tf
+10.1199999999999992 TL
+0.2 0.255 0.333 rg
+53.8582677165354369 255.1183464566928478 Td
+(• El taller crea el presupuesto en Cotizaciones -> Nuevo Presupuesto \(/dashboard/finance/quotes/new\) con diagnostico y firma.) Tj
+ET
+BT
+/F1 8.8 Tf
+10.1199999999999992 TL
+0.2 0.255 0.333 rg
+53.8582677165354369 243.2128346456692043 Td
+(• Envia el enlace con el boton "Enviar por WhatsApp" o descarga el documento formal con "Descargar PDF".) Tj
+ET
+BT
+/F1 8.8 Tf
+10.1199999999999992 TL
+0.2 0.255 0.333 rg
+53.8582677165354369 231.3073228346456744 Td
+(• Al aprobar el cliente, el estado cambia a "Aprobada" y se habilita el boton "Convertir a OT", que genera la Orden de Trabajo) Tj
+T* (\(OT\) en 1 clic.) Tj
+ET
+0.89 0.91 0.94 RG
+42.5196850393700814 34.0157480314960665 m
+552.7603149606298985 34.0157480314960665 l
+S
+BT
+/F1 8 Tf
+9.1999999999999993 TL
+0.392 0.455 0.545 rg
+42.5196850393700814 19.8425196850394059 Td
+(LionFix Service ERP - Documento Oficial de Flujo de Cliente y Operacion) Tj
+ET
+BT
+/F1 8 Tf
+9.1999999999999993 TL
+0.392 0.455 0.545 rg
+490.3981102362204183 19.8425196850394059 Td
+(Pagina 1 de 2) Tj
+ET
+endstream
+endobj
+5 0 obj
+<</Type /Page
+/Parent 1 0 R
+/Resources 2 0 R
+/MediaBox [0 0 595.2799999999999727 841.8899999999999864]
+/Contents 6 0 R
+>>
+endobj
+6 0 obj
+<<
+/Length 5441
+>>
+stream
+0.5670000000000001 w
+0 G
+0.23 0.51 0.96 rg
+46.7716535433070888 790.8663779527558972 m
+548.5083464566928342 790.8663779527558972 l
+550.8566438181780995 790.8663779527558972 552.7603149606298985 788.962706810304212 552.7603149606298985 786.614409448818833 c
+552.7603149606298985 772.4411811023621794 l
+552.7603149606298985 770.0928837408768004 550.4120175991446331 768.1892125984251152 548.5083464566928342 768.1892125984251152 c
+46.7716535433070888 768.1892125984251152 l
+44.4233561818218305 768.1892125984251152 42.5196850393700814 770.5375099599104942 42.5196850393700814 772.4411811023621794 c
+42.5196850393700814 786.614409448818833 l
+42.5196850393700814 788.962706810304212 44.8679824008553467 790.8663779527558972 46.7716535433070888 790.8663779527558972 c
+h
+f
+BT
+/F2 10 Tf
+11.5 TL
+1. g
+51.0236220472441033 775.2758267716535556 Td
+(PASO 4: Reparacion en Taller y Seguimiento en Tiempo Real) Tj
+ET
+BT
+/F2 9.5 Tf
+10.9249999999999989 TL
+0.059 0.09 0.165 rg
+48.1889763779527627 756.8506299212598378 Td
+(Que hace / ve el Cliente:) Tj
+ET
+BT
+/F1 8.8 Tf
+10.1199999999999992 TL
+0.2 0.255 0.333 rg
+53.8582677165354369 744.0947244094487587 Td
+(• Puede ingresar en cualquier momento a su Portal de Cliente \(/portal/vehicles\) para ver en que etapa exacta se encuentra su) Tj
+T* (vehiculo.) Tj
+ET
+BT
+/F1 8.8 Tf
+10.1199999999999992 TL
+0.2 0.255 0.333 rg
+53.8582677165354369 720.2837007874015853 Td
+(• Consulta el historial clinico automotriz de su patente con total transparencia.) Tj
+ET
+BT
+/F2 9.5 Tf
+10.9249999999999989 TL
+0.059 0.09 0.165 rg
+48.1889763779527627 702.7088976377951894 Td
+(Que pasa en el Software \(LionFix Service ERP\):) Tj
+ET
+BT
+/F1 8.8 Tf
+10.1199999999999992 TL
+0.2 0.255 0.333 rg
+53.8582677165354369 689.952992125984224 Td
+(• El vehiculo ocupa una de las 6 Estaciones de Trabajo monitoreadas en vivo en el Panel de Control \(/dashboard\).) Tj
+ET
+BT
+/F1 8.8 Tf
+10.1199999999999992 TL
+0.2 0.255 0.333 rg
+53.8582677165354369 678.0474803149605805 Td
+(• El mecanico consulta pares de apriete \(Nm\), fluidos y diagramas en Manuales & Torques + Ventana Directa HaynesPro) Tj
+T* (\(/dashboard/manuals\).) Tj
+ET
+BT
+/F1 8.8 Tf
+10.1199999999999992 TL
+0.2 0.255 0.333 rg
+53.8582677165354369 654.2364566929134071 Td
+(• En la Orden de Trabajo \(/dashboard/work-orders/[id]\) registra repuestos de Inventario, codigos OBD-II y avances en la) Tj
+T* (Bitacora de Servicio.) Tj
+ET
+BT
+/F1 8.8 Tf
+10.1199999999999992 TL
+0.2 0.255 0.333 rg
+53.8582677165354369 630.42543307086612 Td
+(• Actualiza el estado paso a paso: Ingresado -> En Diagnostico -> Esperando Repuestos -> En Reparacion -> Listo para) Tj
+T* (Retiro.) Tj
+ET
+0.66 0.33 0.97 rg
+46.7716535433070888 592.4411811023621794 m
+548.5083464566928342 592.4411811023621794 l
+550.8566438181780995 592.4411811023621794 552.7603149606298985 590.5375099599102668 552.7603149606298985 588.1892125984251152 c
+552.7603149606298985 574.0159842519684616 l
+552.7603149606298985 571.6676868904830826 550.4120175991446331 569.7640157480313974 548.5083464566928342 569.7640157480313974 c
+46.7716535433070888 569.7640157480313974 l
+44.4233561818218305 569.7640157480313974 42.5196850393700814 572.1123131095166627 42.5196850393700814 574.0159842519684616 c
+42.5196850393700814 588.1892125984251152 l
+42.5196850393700814 590.5375099599102668 44.8679824008553467 592.4411811023621794 46.7716535433070888 592.4411811023621794 c
+h
+f
+BT
+/F2 10 Tf
+11.5 TL
+1. g
+51.0236220472441033 576.8506299212597241 Td
+(PASO 5: Control de Calidad de Salida, Entrega y Encuesta de Satisfaccion) Tj
+ET
+BT
+/F2 9.5 Tf
+10.9249999999999989 TL
+0.059 0.09 0.165 rg
+48.1889763779527627 558.42543307086612 Td
+(Que hace / ve el Cliente:) Tj
+ET
+BT
+/F1 8.8 Tf
+10.1199999999999992 TL
+0.2 0.255 0.333 rg
+53.8582677165354369 545.6695275590550409 Td
+(• Recibe su vehiculo reparado junto con el respaldo fotografico de entrada/salida y el detalle de los trabajos ejecutados.) Tj
+ET
+BT
+/F1 8.8 Tf
+10.1199999999999992 TL
+0.2 0.255 0.333 rg
+53.8582677165354369 533.7640157480313974 Td
+(• Califica la atencion de 1 a 5 estrellas y deja su comentario en la Encuesta de Satisfaccion.) Tj
+ET
+BT
+/F2 9.5 Tf
+10.9249999999999989 TL
+0.059 0.09 0.165 rg
+48.1889763779527627 516.1892125984251152 Td
+(Que pasa en el Software \(LionFix Service ERP\):) Tj
+ET
+BT
+/F1 8.8 Tf
+10.1199999999999992 TL
+0.2 0.255 0.333 rg
+53.8582677165354369 503.4333070866140929 Td
+(• Al finalizar la reparacion, el taller ejecuta el Checklist de Entrega en /dashboard/management/checklists \(limpieza, luces,) Tj
+T* (fluidos, boleta/factura y fotos de salida\).) Tj
+ET
+BT
+/F1 8.8 Tf
+10.1199999999999992 TL
+0.2 0.255 0.333 rg
+53.8582677165354369 479.6222834645668058 Td
+(• Al guardar el Checklist de Entrega completo, la Orden de Trabajo pasa automaticamente a estado "Entregado" y libera la) Tj
+T* (estacion de trabajo.) Tj
+ET
+BT
+/F1 8.8 Tf
+10.1199999999999992 TL
+0.2 0.255 0.333 rg
+53.8582677165354369 455.8112598425195756 Td
+(• Toda la informacion queda respaldada en la base de datos y disponible para exportar a Excel en Reportes) Tj
+T* (\(/dashboard/finance/reports\).) Tj
+ET
+0.89 0.91 0.94 RG
+42.5196850393700814 34.0157480314960665 m
+552.7603149606298985 34.0157480314960665 l
+S
+BT
+/F1 8 Tf
+9.1999999999999993 TL
+0.392 0.455 0.545 rg
+42.5196850393700814 19.8425196850394059 Td
+(LionFix Service ERP - Documento Oficial de Flujo de Cliente y Operacion) Tj
+ET
+BT
+/F1 8 Tf
+9.1999999999999993 TL
+0.392 0.455 0.545 rg
+490.3981102362204183 19.8425196850394059 Td
+(Pagina 2 de 2) Tj
+ET
+endstream
+endobj
+1 0 obj
+<</Type /Pages
+/Kids [3 0 R 5 0 R ]
+/Count 2
+>>
+endobj
+7 0 obj
+<<
+/Type /Font
+/BaseFont /Helvetica
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+8 0 obj
+<<
+/Type /Font
+/BaseFont /Helvetica-Bold
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+9 0 obj
+<<
+/Type /Font
+/BaseFont /Helvetica-Oblique
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+10 0 obj
+<<
+/Type /Font
+/BaseFont /Helvetica-BoldOblique
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+11 0 obj
+<<
+/Type /Font
+/BaseFont /Courier
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+12 0 obj
+<<
+/Type /Font
+/BaseFont /Courier-Bold
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+13 0 obj
+<<
+/Type /Font
+/BaseFont /Courier-Oblique
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+14 0 obj
+<<
+/Type /Font
+/BaseFont /Courier-BoldOblique
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+15 0 obj
+<<
+/Type /Font
+/BaseFont /Times-Roman
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+16 0 obj
+<<
+/Type /Font
+/BaseFont /Times-Bold
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+17 0 obj
+<<
+/Type /Font
+/BaseFont /Times-Italic
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+18 0 obj
+<<
+/Type /Font
+/BaseFont /Times-BoldItalic
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+19 0 obj
+<<
+/Type /Font
+/BaseFont /ZapfDingbats
+/Subtype /Type1
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+20 0 obj
+<<
+/Type /Font
+/BaseFont /Symbol
+/Subtype /Type1
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+2 0 obj
+<<
+/ProcSet [/PDF /Text /ImageB /ImageC /ImageI]
+/Font <<
+/F1 7 0 R
+/F2 8 0 R
+/F3 9 0 R
+/F4 10 0 R
+/F5 11 0 R
+/F6 12 0 R
+/F7 13 0 R
+/F8 14 0 R
+/F9 15 0 R
+/F10 16 0 R
+/F11 17 0 R
+/F12 18 0 R
+/F13 19 0 R
+/F14 20 0 R
+>>
+/XObject <<
+>>
+>>
+endobj
+21 0 obj
+<<
+/Producer (jsPDF 4.2.1)
+/CreationDate (D:20261010152210-03'00')
+>>
+endobj
+22 0 obj
+<<
+/Type /Catalog
+/Pages 1 0 R
+/OpenAction [3 0 R /FitH null]
+/PageLayout /OneColumn
+>>
+endobj
+xref
+0 23
+0000000000 65535 f 
+0000014911 00000 n 
+0000016736 00000 n 
+0000000015 00000 n 
+0000000152 00000 n 
+0000009281 00000 n 
+0000009418 00000 n 
+0000014974 00000 n 
+0000015099 00000 n 
+0000015229 00000 n 
+0000015362 00000 n 
+0000015500 00000 n 
+0000015624 00000 n 
+0000015753 00000 n 
+0000015885 00000 n 
+0000016021 00000 n 
+0000016149 00000 n 
+0000016276 00000 n 
+0000016405 00000 n 
+0000016538 00000 n 
+0000016640 00000 n 
+0000016986 00000 n 
+0000017072 00000 n 
+trailer
+<<
+/Size 23
+/Root 22 0 R
+/Info 21 0 R
+/ID [ <BC3B2B380A2E7C09C6065AE332D9CF80> <BC3B2B380A2E7C09C6065AE332D9CF80> ]
+>>
+startxref
+17176
+%%EOF

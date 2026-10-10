@@ -304,8 +304,32 @@ async function main() {
     assert.equal(delQErr, null, `Error eliminando cotización: ${delQErr?.message}`);
   });
 
-  // 7. Módulo 05: Calendario / Pizarra de Programación - CRUD Real Completo
-  await runTest('05. Calendario', 'CRUD Real en DB: Asignar Tarea en Pizarra Horaria (calendar_events) -> Actualizar -> Eliminar', async () => {
+  // 7. Módulo 05: Calendario y Agendamiento Online de Cliente (appointments + calendar_events)
+  await runTest('05. Calendario & Agenda Web', 'CRUD Real en DB: Agendar Cita Online (appointments) -> Asignar en Pizarra Horaria (calendar_events) -> Eliminar', async () => {
+    const resCode = 'TEST99';
+    const { data: createdApt, error: aptErr } = await supabase
+      .from('appointments')
+      .insert({
+        client_name: 'Cliente Reserva Web',
+        client_rut: '12.345.678-9',
+        client_email: 'reserva@lionfix.cl',
+        client_phone: '+56911112222',
+        vehicle_plate: 'CRUD99',
+        vehicle_make: 'Mercedes-Benz',
+        vehicle_model: 'Sprinter 315',
+        vehicle_type: 'Van',
+        mileage: 45000,
+        type: 'Mantención',
+        requested_date: new Date().toISOString().split('T')[0],
+        requested_time: '09:00',
+        reservation_code: resCode,
+        status: 'Pendiente',
+      })
+      .select()
+      .single();
+    assert.equal(aptErr, null, `Error agendando cita web: ${aptErr?.message}`);
+    assert.equal(createdApt.reservation_code, resCode);
+
     const startTime = new Date();
     startTime.setHours(9, 0, 0, 0);
     const endTime = new Date(startTime.getTime() + 2 * 60 * 60 * 1000);
@@ -327,6 +351,7 @@ async function main() {
 
     const { error: delEvErr } = await supabase.from('calendar_events').delete().eq('id', createdEv.id);
     assert.equal(delEvErr, null, `Error eliminando bloque horario: ${delEvErr?.message}`);
+    await supabaseAdmin.from('appointments').delete().eq('id', createdApt.id);
   });
 
   // 8. Módulo 07: Inventario de Repuestos y Órdenes de Compra - CRUD Real Completo

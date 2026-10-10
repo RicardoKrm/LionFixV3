@@ -28,6 +28,7 @@ import {
   ArrowRight,
   Search,
   Sparkles,
+  Download,
 } from "lucide-react";
 
 export interface GuideModuleItem {
@@ -293,6 +294,12 @@ export function WorkshopUsageGuide({ compact = false }: { compact?: boolean }) {
                 className="pl-9 h-9"
               />
             </div>
+            <Button asChild variant="default" size="sm" className="shrink-0 bg-amber-500 hover:bg-amber-600 text-black font-bold">
+              <a href="/Proceso_Cliente_LionFix_Service.pdf" download="Proceso_Cliente_LionFix_Service.pdf">
+                <Download className="mr-2 h-4 w-4" />
+                Descargar PDF Proceso Cliente
+              </a>
+            </Button>
             {compact && (
               <Button asChild variant="outline" size="sm" className="shrink-0">
                 <Link href="/dashboard/guide">
