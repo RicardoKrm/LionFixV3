@@ -445,13 +445,13 @@ async function main() {
   });
 
   // 11. Módulo 11: Guía de Uso de Cada Panel
-  await runTest('11. Guía de Uso', 'Verificación de los 10 módulos documentados en WorkshopUsageGuide y presencia en Dashboard/Sidebar', async () => {
+  await runTest('11. Guía de Uso', 'Verificación de los 10 módulos documentados en WorkshopUsageGuide y presencia en /dashboard/guide y Sidebar', async () => {
     const guideComp = fs.readFileSync(
       path.resolve('src/components/workshop-usage-guide.tsx'),
       'utf8'
     );
-    const dashboardPage = fs.readFileSync(
-      path.resolve('src/app/dashboard/page.tsx'),
+    const guidePage = fs.readFileSync(
+      path.resolve('src/app/dashboard/guide/page.tsx'),
       'utf8'
     );
     const sidebarComp = fs.readFileSync(
@@ -459,7 +459,7 @@ async function main() {
       'utf8'
     );
     assert.ok(guideComp.includes('WORKSHOP_GUIDE_MODULES'), 'Debe exportar los módulos de la guía');
-    assert.ok(dashboardPage.includes('<WorkshopUsageGuide'), 'El Panel de Control debe mostrar la Guía de Uso abajo de todo');
+    assert.ok(guidePage.includes('<WorkshopUsageGuide'), 'El panel /dashboard/guide debe mostrar la Guía de Uso');
     assert.ok(sidebarComp.includes('/dashboard/guide'), 'El menú lateral debe incluir el enlace a la Guía de Uso abajo de todo');
   });
 

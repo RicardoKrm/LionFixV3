@@ -11,7 +11,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
-import { WorkshopUsageGuide } from "@/components/workshop-usage-guide";
 
 const TOTAL_WORKSTATIONS = 6;
 
@@ -289,10 +288,6 @@ export default function DashboardPage() {
                  )}
             </CardContent>
         </Card>
-
-        {/* --- Panel Inferior: Guía de Uso de Cada Panel --- */}
-        <WorkshopUsageGuide compact />
-        
       </main>
     </div>
   );
