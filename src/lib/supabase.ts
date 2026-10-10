@@ -39,6 +39,10 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: true,
+    // Prevents "Acquiring an exclusive Navigator LockManager lock immediately failed" in browsers
+    lock: async <R>(_name: string, _acquireTimeout: number, fn: () => Promise<R>): Promise<R> => {
+      return await fn();
+    },
   },
   global: {
     fetch: safeFetchWithTimeout
