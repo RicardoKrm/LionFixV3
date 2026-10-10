@@ -27,6 +27,9 @@ import {
   CheckCircle2,
   PlusCircle,
   Trash2,
+  RotateCw,
+  Globe,
+  Monitor,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
@@ -129,6 +132,7 @@ export default function ManualsPage() {
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [haynesProUrl, setHaynesProUrl] = useState("https://workshopdata.com");
+  const [iframeKey, setIframeKey] = useState(0);
 
   // Obtener la ficha seleccionada actualmente
   const activeSheet = sheets.find((s) => s.id === selectedSheetId) || sheets[0];
@@ -371,7 +375,7 @@ export default function ManualsPage() {
               <FileText className="h-4 w-4 text-orange-400" /> Visor PDF de Taller
             </TabsTrigger>
             <TabsTrigger value="notes" className="gap-2">
-              <StickyNote className="h-4 w-4 text-yellow-400" /> Bloc de Notas del Mecánico
+              <StickyNote className="h-4 w-4 text-yellow-400" /> Bloc de Notas & HaynesPro Directo
             </TabsTrigger>
           </TabsList>
 
@@ -512,49 +516,162 @@ export default function ManualsPage() {
             </Card>
           </TabsContent>
 
-          {/* TAB 4: BLOC DE NOTAS DEL MECÁNICO */}
+          {/* TAB 4: BLOC DE NOTAS & VENTANA DIRECTA HAYNESPRO (LADO A LADO) */}
           <TabsContent value="notes">
-            <Card className="border-border/60 shadow-sm">
-              <CardHeader className="pb-3 border-b border-border/40">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <StickyNote className="h-4 w-4 text-yellow-400" />
-                  Bloc de Notas Técnicas del Taller
-                </CardTitle>
-                <CardDescription>
-                  Anota procedimientos especiales, fallas recurrentes o tips de armado para este motor
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="p-6 space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="mechanic-notes" className="text-xs uppercase font-semibold text-muted-foreground">
-                    Notas y Observaciones de Montaje
-                  </Label>
-                  <Textarea
-                    id="mechanic-notes"
-                    rows={8}
-                    className="font-mono text-sm leading-relaxed"
-                    placeholder="Ejemplo: Al desmontar la bomba de alta presión, verificar estado del engranaje y usar traba perno..."
-                    value={activeSheet.notes}
-                    onChange={(e) => handleUpdateNotes(e.target.value)}
-                  />
-                </div>
-                <div className="flex justify-between items-center pt-2">
-                  <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" /> Los cambios se guardan automáticamente
-                  </p>
-                  <Button
-                    size="sm"
-                    className="gap-2"
-                    onClick={() => {
-                      saveSheets(sheets);
-                      toast({ title: "Notas Guardadas", description: "Se actualizaron las notas técnicas del vehículo." });
-                    }}
-                  >
-                    <Save className="h-4 w-4" /> Guardar Notas
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
+              
+              {/* LADO IZQUIERDO: BLOC DE NOTAS TÉCNICAS */}
+              <div className="space-y-6">
+                <Card className="border-border/60 shadow-sm">
+                  <CardHeader className="pb-3 border-b border-border/40">
+                    <CardTitle className="text-base flex items-center justify-between">
+                      <span className="flex items-center gap-2">
+                        <StickyNote className="h-4 w-4 text-yellow-400" />
+                        Bloc de Notas Técnicas del Taller
+                      </span>
+                      <Badge variant="outline" className="text-xs font-mono">
+                        {activeSheet.engineCode}
+                      </Badge>
+                    </CardTitle>
+                    <CardDescription>
+                      Anota procedimientos especiales, calibraciones o tips de armado para este modelo
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="p-6 space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="mechanic-notes" className="text-xs uppercase font-semibold text-muted-foreground">
+                        Observaciones de Montaje & Procedimientos
+                      </Label>
+                      <Textarea
+                        id="mechanic-notes"
+                        rows={12}
+                        className="font-mono text-sm leading-relaxed"
+                        placeholder="Ejemplo: Al montar la culata en OM651, revisar golillas de inyectores (sustituir siempre). Torque tapón cárter 30 Nm..."
+                        value={activeSheet.notes}
+                        onChange={(e) => handleUpdateNotes(e.target.value)}
+                      />
+                    </div>
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 pt-2">
+                      <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" /> Los cambios se guardan localmente
+                      </p>
+                      <Button
+                        size="sm"
+                        className="gap-2"
+                        onClick={() => {
+                          saveSheets(sheets);
+                          toast({ title: "Notas Guardadas", description: "Se actualizaron las notas técnicas del vehículo." });
+                        }}
+                      >
+                        <Save className="h-4 w-4" /> Guardar Notas
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* RESUMEN RÁPIDO DE TORQUES AL LADO DE LAS NOTAS */}
+                <Card className="border-border/60 bg-muted/20">
+                  <CardHeader className="py-3 px-4 border-b border-border/40">
+                    <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                      <Wrench className="h-3.5 w-3.5 text-primary" /> Torques Clave Rápidos ({activeSheet.name})
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-3 text-xs space-y-2">
+                    {activeSheet.engineTorques.slice(0, 4).map((t, idx) => (
+                      <div key={idx} className="flex justify-between items-center py-1 border-b border-border/30 last:border-0">
+                        <span className="text-muted-foreground">{t.component}:</span>
+                        <span className="font-mono font-bold text-primary">{t.torque}</span>
+                      </div>
+                    ))}
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* LADO DERECHO: VENTANA DIRECTA HAYNESPRO */}
+              <div className="space-y-3">
+                <Card className="border-border/60 shadow-sm overflow-hidden flex flex-col">
+                  {/* BARRA SUPERIOR ESTILO NAVEGADOR / CONSOLA TALLER */}
+                  <CardHeader className="py-2.5 px-4 bg-muted/40 border-b border-border/40 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shrink-0"></div>
+                      <span className="font-semibold text-xs text-foreground uppercase tracking-wider shrink-0 flex items-center gap-1">
+                        <Globe className="h-3.5 w-3.5 text-primary" /> HaynesPro Directo
+                      </span>
+                      <Input
+                        value={haynesProUrl}
+                        onChange={(e) => setHaynesProUrl(e.target.value)}
+                        className="h-7 text-xs font-mono bg-background/80 border-border/60 max-w-[280px]"
+                        placeholder="https://workshopdata.com"
+                      />
+                    </div>
+
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 px-2 text-xs gap-1"
+                        title="Recargar visor"
+                        onClick={() => {
+                          setIframeKey((k) => k + 1);
+                          toast({ title: "Recargando", description: "Actualizando ventana de HaynesPro..." });
+                        }}
+                      >
+                        <RotateCw className="h-3.5 w-3.5" />
+                        <span className="hidden sm:inline">Recargar</span>
+                      </Button>
+                      
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 px-2 text-xs gap-1"
+                        title="Abrir en ventana externa o 2do monitor"
+                        onClick={() => window.open(haynesProUrl, "_blank", "noopener,noreferrer")}
+                      >
+                        <Monitor className="h-3.5 w-3.5 text-primary" />
+                        <span className="hidden sm:inline">2do Monitor</span>
+                      </Button>
+
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-7 px-2 text-xs gap-1 border-primary/30 text-primary hover:bg-primary/10"
+                        onClick={() => window.open(haynesProUrl, "_blank")}
+                      >
+                        <ExternalLink className="h-3.5 w-3.5" />
+                        Abrir Web
+                      </Button>
+                    </div>
+                  </CardHeader>
+
+                  {/* VISOR EMBEBIDO INTERACTIVO */}
+                  <CardContent className="p-0 relative bg-neutral-950">
+                    <div className="w-full h-[620px] bg-neutral-900 border-none relative">
+                      <iframe
+                        key={iframeKey}
+                        src={haynesProUrl}
+                        className="w-full h-full border-none"
+                        title="HaynesPro WorkshopData Cloud"
+                        allow="clipboard-read; clipboard-write; fullscreen"
+                      />
+                    </div>
+                  </CardContent>
+
+                  {/* PIE DE LA VENTANA DIRECTA */}
+                  <div className="py-2 px-4 bg-muted/30 border-t border-border/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1 text-[11px] text-muted-foreground">
+                    <span>
+                      💡 Tip: Puedes consultar diagramas y manuales a la derecha mientras escribes notas a la izquierda.
+                    </span>
+                    <button
+                      onClick={handleSaveHaynesUrl}
+                      className="text-primary hover:underline font-medium shrink-0"
+                    >
+                      Guardar URL actual
+                    </button>
+                  </div>
+                </Card>
+              </div>
+
+            </div>
           </TabsContent>
         </Tabs>
 
