@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { User, Car, Wrench, Calendar, StickyNote, Package, Edit, Pencil, MessageSquarePlus, Clock, FileCheck, Upload, Download, FileText, Trash2, FileSignature, DollarSign, TrendingUp, TrendingDown } from "lucide-react";
+import { User, Car, Wrench, Calendar, StickyNote, Package, Edit, Pencil, MessageSquarePlus, Clock, FileCheck, Upload, Download, FileText, Trash2, FileSignature, DollarSign, TrendingUp, TrendingDown, BookOpen } from "lucide-react";
 import { getStatusVariant } from "@/lib/utils";
 import {
   Table,
@@ -374,6 +374,14 @@ export default function WorkOrderDetailPage({
                 <DropdownMenuItem onClick={() => handleUpdateStatus('Entregado')}>Entregado</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+            <Button
+              variant="outline"
+              className="gap-2 border-primary/40 hover:bg-primary/10 text-foreground"
+              onClick={() => router.push('/dashboard/manuals')}
+            >
+              <BookOpen className="h-4 w-4 text-primary" />
+              Manual & Torques
+            </Button>
             <Button onClick={() => setIsFormOpen(true)} variant="secondary">
                 <Edit className="mr-2 h-4 w-4" />
                 Editar Orden

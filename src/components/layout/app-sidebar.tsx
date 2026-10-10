@@ -21,6 +21,7 @@ import {
   FileDigit,
   BarChart,
   UserSquare,
+  BookOpen,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -141,6 +142,17 @@ export function AppSidebar() {
               >
                 <Package />
                 <span>Inventario</span>
+              </SidebarMenuButton>
+            </Link>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <Link href="/dashboard/manuals" passHref>
+              <SidebarMenuButton
+                isActive={isActive("/dashboard/manuals")}
+                tooltip="Manuales Técnicos & HaynesPro"
+              >
+                <BookOpen />
+                <span>Manuales & Torques</span>
               </SidebarMenuButton>
             </Link>
           </SidebarMenuItem>
