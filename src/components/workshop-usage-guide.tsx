@@ -200,11 +200,11 @@ export const WORKSHOP_GUIDE_MODULES: GuideModuleItem[] = [
     capabilities: [
       "Consultar tablas rápidas de Torques de Apriete (Nm) y Capacidades de Fluidos por modelo y sistema (Motor, Frenos, Suspensión, Transmisión).",
       "Subir, buscar y visualizar manuales técnicos en formato PDF dentro del navegador.",
-      "Escribir mediciones, códigos de falla (DTC) y observaciones en el Bloc de Notas del Mecánico con guardado automático.",
-      "Operar en la Ventana Directa HaynesPro (situada al lado derecho del Bloc de Notas) con opción de vista embebida, pantalla completa o ventana acoplada.",
+      "Escribir mediciones, códigos de falla (DTC) y observaciones en la pestaña dedicada de Bloc de Notas del Mecánico con guardado automático.",
+      "Operar en la pestaña dedicada HaynesPro Directo a pantalla completa con opción de vista embebida, 2do monitor o ventana externa.",
     ],
     quickTip:
-      "Si el navegador bloquea el inicio de sesión de HaynesPro por políticas de seguridad, usa el botón 'Abrir Ventana Directa Acoplada' en el mismo panel.",
+      "Si el navegador bloquea el inicio de sesión de HaynesPro por políticas de seguridad, usa el botón '2do Monitor' o 'Abrir Web' en la pestaña de HaynesPro Directo.",
   },
   {
     id: "reports",
